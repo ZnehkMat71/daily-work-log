@@ -1,0 +1,108 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="welcome">
+    <p class="eyebrow">DAILY OVERVIEW</p>
+    <h2>Stay organized. Get things done.</h2>
+    <p>Keep track of your daily activities and progress in one place.</p>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <p>Total Tasks</p>
+        <h3>{{ stats.total or 0 }}</h3>
+        <span>All recorded tasks</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Completed</p>
+        <h3>{{ stats.completed or 0 }}</h3>
+        <span>Finished tasks</span>
+    </article>
+
+    <article class="stat-card">
+        <p>In Progress</p>
+        <h3>{{ stats.in_progress or 0 }}</h3>
+        <span>Currently working on</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Pending</p>
+        <h3>{{ stats.pending or 0 }}</h3>
+        <span>Waiting to start</span>
+    </article>
+</section>
+
+<section class="content-card">
+    <div class="section-heading">
+        <div>
+            <h2>Recent Activities</h2>
+            <p>Your five most recently recorded activities.</p>
+        </div>
+
+        <a href="{{ url_for('work_history') }}" class="clear-button">
+            View All
+        </a>
+    </div>
+
+    {% if recent_activities %}
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Activity</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for activity in recent_activities %}
+                        <tr>
+                            <td>
+                                {{ activity['activity_date'] }}
+                                {% if activity['activity_time'] %}
+                                    <br>
+                                    <small>{{ activity['activity_time'] }}</small>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <strong>{{ activity['title'] }}</strong>
+                                    {% if activity['notes'] %}
+                                        <p class="activity-notes">
+                                            {{ activity['notes'] | truncate(120, true, '...') }}
+                                        </p>
+                                    {% endif %}
+                            </td>
+
+                            <td>{{ activity['priority'] }}</td>
+
+                            <td>
+                                <span class="status-badge">
+                                    {{ activity['status'] }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <h3>No activities yet</h3>
+            <p>Start by recording your first work activity.</p>
+
+            <a href="{{ url_for('add_activity') }}"
+               class="primary-button">
+                Add Your First Activity
+            </a>
+        </div>
+    {% endif %}
+</section>
+
+{% endblock %}

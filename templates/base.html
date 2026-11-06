@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Daily Work Log | {{ page_title }}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <span class="brand-icon">D</span>
+            <span>Daily Work Log</span>
+        </div>
+
+        <p class="menu-label">WORKSPACE</p>
+
+        <nav>
+            <a href="{{ url_for('dashboard') }}"
+               class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                Dashboard
+            </a>
+
+            <a href="{{ url_for('add_activity') }}"
+               class="nav-link {% if active_page == 'add_activity' %}active{% endif %}">
+                Add Activity
+            </a>
+
+            <a href="{{ url_for('work_history') }}"
+               class="nav-link {% if active_page == 'work_history' %}active{% endif %}">
+                Work History
+            </a>
+
+            <a href="{{ url_for('reports') }}"
+               class="nav-link {% if active_page == 'reports' %}active{% endif %}">
+                Reports
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            Personal Task Tracker
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">YOUR WORKSPACE</p>
+                <h1>{{ page_title }}</h1>
+            </div>
+
+            <span class="local-badge">Local application</span>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="message {{ category }}" role="status">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+    </main>
+
+</div>
+
+</body>
+</html>
