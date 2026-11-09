@@ -105,7 +105,7 @@
 
                                 {% if activity['notes'] %}
                                     <p class="activity-notes">
-                                        {{ activity['notes'] }}
+                                        {{ activity['notes'] | truncate(100, true, '...') }}
                                     </p>
                                 {% endif %}
                             </td>

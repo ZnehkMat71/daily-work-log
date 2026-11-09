@@ -1,0 +1,348 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="welcome">
+    <p class="eyebrow">WORKSPACE / REPORTS</p>
+    <h2>Activity Reports</h2>
+    <p>Review your recorded activities and overall progress.</p>
+</section>
+
+<!-- Overall Statistics -->
+<section class="stats-grid">
+
+    <article class="stat-card">
+        <p>Total Tasks</p>
+        <h3>{{ stats.total or 0 }}</h3>
+        <span>All recorded tasks</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Completed</p>
+        <h3>{{ stats.completed or 0 }}</h3>
+        <span>Finished tasks</span>
+    </article>
+
+    <article class="stat-card">
+        <p>In Progress</p>
+        <h3>{{ stats.in_progress or 0 }}</h3>
+        <span>Currently working on</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Pending</p>
+        <h3>{{ stats.pending or 0 }}</h3>
+        <span>Waiting to start</span>
+    </article>
+
+    <article class="stat-card">
+        <p>Today's Activities</p>
+        <h3>{{ stats.today or 0 }}</h3>
+        <span>Activities recorded today</span>
+    </article>
+
+</section>
+
+<!-- Report Overview -->
+<section class="content-card">
+
+    <div class="section-heading">
+        <div>
+            <h2>Report Overview</h2>
+            <p>Summary of your current activity records.</p>
+        </div>
+    </div>
+
+    <div class="report-summary">
+
+        <p>
+            You have recorded
+            <strong>{{ stats.total or 0 }}</strong>
+            activities in total.
+        </p>
+
+        <p>
+            <strong>{{ stats.completed or 0 }}</strong>
+            {{ 'activity' if stats.completed == 1 else 'activities' }}
+            completed.
+        </p>
+
+        <p>
+            <strong>{{ stats.in_progress or 0 }}</strong>
+            {{ 'activity' if stats.in_progress == 1 else 'activities' }}
+            currently in progress.
+        </p>
+
+        <p>
+            <strong>{{ stats.pending or 0 }}</strong>
+            {{ 'activity' if stats.pending == 1 else 'activities' }}
+            waiting to be started.
+        </p>
+
+    </div>
+
+</section>
+
+<!-- Weekly Report -->
+<section class="content-card">
+
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">WEEKLY SUMMARY</p>
+            <h2>This Week's Activities</h2>
+
+            <p>
+                {{ weekly_report.week_start.strftime('%B %d, %Y') }}
+                -
+                {{ weekly_report.week_end.strftime('%B %d, %Y') }}
+            </p>
+
+            <!-- Weekly Navigation -->
+            <div class="week-navigation">
+
+                <a href="{{ url_for('reports', week=week_offset - 1) }}"
+                   class="clear-button">
+                    &larr; Previous Week
+                </a>
+
+                <a href="{{ url_for('reports', week=0) }}"
+                   class="clear-button">
+                    Current Week
+                </a>
+
+                <a href="{{ url_for('reports', week=week_offset + 1) }}"
+                   class="clear-button">
+                    Next Week &rarr;
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Statistics -->
+    <section class="stats-grid">
+
+        <article class="stat-card">
+            <p>Weekly Total</p>
+            <h3>{{ weekly_report.stats.total or 0 }}</h3>
+            <span>Activities this week</span>
+        </article>
+
+        <article class="stat-card">
+            <p>Completed</p>
+            <h3>{{ weekly_report.stats.completed or 0 }}</h3>
+            <span>Finished this week</span>
+        </article>
+
+        <article class="stat-card">
+            <p>In Progress</p>
+            <h3>{{ weekly_report.stats.in_progress or 0 }}</h3>
+            <span>Currently working on</span>
+        </article>
+
+        <article class="stat-card">
+            <p>Pending</p>
+            <h3>{{ weekly_report.stats.pending or 0 }}</h3>
+            <span>Waiting to start</span>
+        </article>
+
+    </section>
+
+    <!-- Daily Breakdown -->
+    <div class="section-heading" style="margin-top: 30px;">
+        <div>
+            <h2>Daily Breakdown</h2>
+            <p>Activities recorded each day this week.</p>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Date</th>
+                    <th>Total Activities</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for day in weekly_report.daily_activity %}
+                    <tr>
+                        <td>{{ day.day }}</td>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.total }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Activity Details -->
+    <div class="section-heading" style="margin-top: 35px;">
+        <div>
+            <h2>Activity Details</h2>
+            <p>All activities recorded during this selected week.</p>
+        </div>
+    </div>
+
+    {% if weekly_report.activities %}
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Activity</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for activity in weekly_report.activities %}
+                        <tr>
+                            <td>
+                                {{ activity['activity_date'] }}
+
+                                {% if activity['activity_time'] %}
+                                    <br>
+                                    <small>
+                                        {{ activity['activity_time'] }}
+                                    </small>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <strong>{{ activity['title'] }}</strong>
+
+                                {% if activity['notes'] %}
+                                    <p class="activity-notes">
+                                        {{ activity['notes'] | truncate(120, true, '...') }}
+                                    </p>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ activity['priority'] }}</td>
+
+                            <td>
+                                <span class="status-badge">
+                                    {{ activity['status'] }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+            <h3>No activities recorded this week</h3>
+            <p>Activities will appear here once you record them.</p>
+        </div>
+
+    {% endif %}
+
+</section>
+
+<!-- MONTHLY REPORT -->
+<section class="content-card">
+
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">MONTHLY SUMMARY</p>
+            <h2>Monthly Activities</h2>
+
+            <p>
+                {{ monthly_report.month_start.strftime('%B %d, %Y') }}
+                -
+                {{ monthly_report.month_end.strftime('%B %d, %Y') }}
+            </p>
+
+            <!-- Monthly Navigation -->
+            <div class="week-navigation">
+
+                <a href="{{ url_for('reports', month=month_offset - 1) }}"
+                   class="clear-button">
+                    &larr; Previous Month
+                </a>
+
+                <a href="{{ url_for('reports', month=0) }}"
+                   class="clear-button">
+                    Current Month
+                </a>
+
+                <a href="{{ url_for('reports', month=month_offset + 1) }}"
+                   class="clear-button">
+                    Next Month &rarr;
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Statistics -->
+    <section class="stats-grid">
+
+        <article class="stat-card">
+            <p>Monthly Total</p>
+            <h3>{{ monthly_report.stats.total or 0 }}</h3>
+            <span>Activities this month</span>
+        </article>
+
+        <article class="stat-card">
+            <p>Completed</p>
+            <h3>{{ monthly_report.stats.completed or 0 }}</h3>
+            <span>Finished this month</span>
+        </article>
+
+        <article class="stat-card">
+            <p>In Progress</p>
+            <h3>{{ monthly_report.stats.in_progress or 0 }}</h3>
+            <span>Currently working on</span>
+        </article>
+
+        <article class="stat-card">
+            <p>Pending</p>
+            <h3>{{ monthly_report.stats.pending or 0 }}</h3>
+            <span>Waiting to start</span>
+        </article>
+
+    </section>
+
+    <!-- Monthly Daily Breakdown -->
+    <div class="section-heading" style="margin-top: 30px;">
+        <div>
+            <h2>Daily Breakdown</h2>
+            <p>Activities recorded each day this month.</p>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Date</th>
+                    <th>Total Activities</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for day in monthly_report.daily_activity %}
+                    <tr>
+                        <td>{{ day.day }}</td>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.total }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</section>
+
+{% endblock %}

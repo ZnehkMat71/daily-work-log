@@ -1,5 +1,5 @@
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 
@@ -21,9 +21,9 @@ def is_valid_time(value):
     except ValueError:
         return False
 
-
 def get_stats():
     """Return task counts for the dashboard."""
+
     connection = get_connection()
 
     try:
@@ -31,15 +31,129 @@ def get_stats():
             """
             SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END)
-                    AS completed,
-                SUM(CASE WHEN status = 'In Progress' THEN 1 ELSE 0 END)
-                    AS in_progress,
-                SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END)
-                    AS pending
+
+                SUM(
+                    CASE WHEN status = 'Completed'
+                    THEN 1 ELSE 0 END
+                ) AS completed,
+
+                SUM(
+                    CASE WHEN status = 'In Progress'
+                    THEN 1 ELSE 0 END
+                ) AS in_progress,
+
+                SUM(
+                    CASE WHEN status = 'Pending'
+                    THEN 1 ELSE 0 END
+                ) AS pending,
+
+                SUM(
+                    CASE WHEN activity_date = ?
+                    THEN 1 ELSE 0 END
+                ) AS today
+
             FROM activities
-            """
+            """,
+            (date.today().isoformat(),)
         ).fetchone()
+
+    finally:
+        connection.close()
+
+
+
+def get_weekly_report(week_offset=0):
+    """Return activity statistics and records for a selected week."""
+
+    today = date.today()
+
+    # Calculate Monday and Sunday.
+    week_start = today - timedelta(days=today.weekday())
+    week_start = week_start + timedelta(weeks=week_offset)
+    week_end = week_start + timedelta(days=6)
+
+    connection = get_connection()
+
+    try:
+        # Get weekly statistics.
+        weekly_stats = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS total,
+
+                SUM(CASE WHEN status = 'Completed'
+                    THEN 1 ELSE 0 END) AS completed,
+
+                SUM(CASE WHEN status = 'In Progress'
+                    THEN 1 ELSE 0 END) AS in_progress,
+
+                SUM(CASE WHEN status = 'Pending'
+                    THEN 1 ELSE 0 END) AS pending
+
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            """,
+            (week_start.isoformat(), week_end.isoformat())
+        ).fetchone()
+
+        # Get daily activity counts.
+        daily_results = connection.execute(
+            """
+            SELECT
+                activity_date,
+                COUNT(*) AS total
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            GROUP BY activity_date
+            """,
+            (week_start.isoformat(), week_end.isoformat())
+        ).fetchall()
+
+        daily_counts = {
+            row["activity_date"]: row["total"]
+            for row in daily_results
+        }
+
+        # Build the seven-day breakdown.
+        daily_activity = []
+
+        for day_offset in range(7):
+            current_day = week_start + timedelta(days=day_offset)
+
+            daily_activity.append({
+                "date": current_day.isoformat(),
+                "day": current_day.strftime("%A"),
+                "total": daily_counts.get(
+                    current_day.isoformat(), 0
+                )
+            })
+
+        # Get individual activities for the selected week.
+        activities = connection.execute(
+            """
+            SELECT
+                id,
+                activity_date,
+                activity_time,
+                title,
+                notes,
+                priority,
+                status
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            ORDER BY activity_date DESC, id DESC
+            """,
+            (week_start.isoformat(), week_end.isoformat())
+        ).fetchall()
+
+        return {
+            "week_start": week_start,
+            "week_end": week_end,
+            "stats": weekly_stats,
+            "daily_activity": daily_activity,
+            "activities": activities
+        }
+
     finally:
         connection.close()
 
@@ -490,15 +604,123 @@ def delete_activity(activity_id):
         connection.close()
 
 
+
+
+
 @app.route("/reports")
 def reports():
-    """Display the reports page."""
+    """Display weekly and monthly reports."""
+
+    # Weekly report navigation.
+    week_offset = request.args.get("week", default=0, type=int)
+    weekly_report = get_weekly_report(week_offset)
+
+    # Monthly report navigation.
+    month_offset = request.args.get("month", default=0, type=int)
+    monthly_report = get_monthly_report(month_offset)
+
     return render_template(
         "reports.html",
         page_title="Reports",
         active_page="reports",
         stats=get_stats(),
+
+        # Weekly report data.
+        weekly_report=weekly_report,
+        week_offset=week_offset,
+
+        # Monthly report data.
+        monthly_report=monthly_report,
+        month_offset=month_offset,
     )
+
+
+def get_monthly_report(month_offset=0):
+    """Return activity statistics for the selected month."""
+
+    today = date.today()
+
+    # Calculate the selected month.
+    month_index = (today.year * 12 + today.month - 1) + month_offset
+    year, month = divmod(month_index, 12)
+    year += 0
+    month += 1
+
+    month_start = date(year, month, 1)
+
+    # Calculate the last day of the selected month.
+    next_month_index = year * 12 + month
+    next_year, next_month = divmod(next_month_index, 12)
+    next_month += 1
+
+    next_month_start = date(next_year, next_month, 1)
+    month_end = next_month_start - timedelta(days=1)
+
+    connection = get_connection()
+
+    try:
+        monthly_stats = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS total,
+
+                SUM(CASE WHEN status = 'Completed'
+                    THEN 1 ELSE 0 END) AS completed,
+
+                SUM(CASE WHEN status = 'In Progress'
+                    THEN 1 ELSE 0 END) AS in_progress,
+
+                SUM(CASE WHEN status = 'Pending'
+                    THEN 1 ELSE 0 END) AS pending
+
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            """,
+            (month_start.isoformat(), month_end.isoformat())
+        ).fetchone()
+
+        daily_results = connection.execute(
+            """
+            SELECT
+                activity_date,
+                COUNT(*) AS total
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            GROUP BY activity_date
+            """,
+            (month_start.isoformat(), month_end.isoformat())
+        ).fetchall()
+
+        daily_counts = {
+            row["activity_date"]: row["total"]
+            for row in daily_results
+        }
+
+        daily_activity = []
+
+        current_day = month_start
+
+        while current_day <= month_end:
+            daily_activity.append({
+                "date": current_day.isoformat(),
+                "day": current_day.strftime("%A"),
+                "total": daily_counts.get(
+                    current_day.isoformat(), 0
+                )
+            })
+
+            current_day += timedelta(days=1)
+
+        return {
+            "month_start": month_start,
+            "month_end": month_end,
+            "stats": monthly_stats,
+            "daily_activity": daily_activity
+        }
+
+    finally:
+        connection.close()
+
 
 
 if __name__ == "__main__":

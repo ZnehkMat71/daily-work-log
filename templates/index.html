@@ -33,7 +33,15 @@
         <h3>{{ stats.pending or 0 }}</h3>
         <span>Waiting to start</span>
     </article>
+    
+    <article class="stat-card">
+        <p>Today's Activities</p>
+        <h3>{{ stats.today or 0 }}</h3>
+        <span>Activities recorded today</span>
+    </article>
 </section>
+
+    
 
 <section class="content-card">
     <div class="section-heading">
