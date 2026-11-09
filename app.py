@@ -1,9 +1,11 @@
 
 from datetime import date, datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Response
 
 from database import get_connection, initialize_database
+import csv
+import io
 
 
 app = Flask(__name__)
@@ -606,10 +608,12 @@ def delete_activity(activity_id):
 
 
 
-
 @app.route("/reports")
 def reports():
     """Display weekly and monthly reports."""
+
+    # Determine the selected report tab.
+    active_tab = request.args.get("tab", "weekly")
 
     # Weekly report navigation.
     week_offset = request.args.get("week", default=0, type=int)
@@ -623,7 +627,11 @@ def reports():
         "reports.html",
         page_title="Reports",
         active_page="reports",
+        active_tab=active_tab,
         stats=get_stats(),
+
+        # Current date for calendar highlighting.
+        today=date.today().isoformat(),
 
         # Weekly report data.
         weekly_report=weekly_report,
@@ -643,7 +651,6 @@ def get_monthly_report(month_offset=0):
     # Calculate the selected month.
     month_index = (today.year * 12 + today.month - 1) + month_offset
     year, month = divmod(month_index, 12)
-    year += 0
     month += 1
 
     month_start = date(year, month, 1)
@@ -659,6 +666,7 @@ def get_monthly_report(month_offset=0):
     connection = get_connection()
 
     try:
+        # Get monthly statistics.
         monthly_stats = connection.execute(
             """
             SELECT
@@ -679,6 +687,7 @@ def get_monthly_report(month_offset=0):
             (month_start.isoformat(), month_end.isoformat())
         ).fetchone()
 
+        # Get daily activity counts.
         daily_results = connection.execute(
             """
             SELECT
@@ -696,6 +705,7 @@ def get_monthly_report(month_offset=0):
             for row in daily_results
         }
 
+        # Build the monthly daily breakdown.
         daily_activity = []
 
         current_day = month_start
@@ -711,17 +721,88 @@ def get_monthly_report(month_offset=0):
 
             current_day += timedelta(days=1)
 
+        # Get individual activities for the selected month.
+        activities = connection.execute(
+            """
+            SELECT
+                id,
+                activity_date,
+                activity_time,
+                title,
+                notes,
+                priority,
+                status
+            FROM activities
+            WHERE activity_date BETWEEN ? AND ?
+            ORDER BY activity_date DESC, id DESC
+            """,
+            (month_start.isoformat(), month_end.isoformat())
+        ).fetchall()
+
         return {
             "month_start": month_start,
             "month_end": month_end,
             "stats": monthly_stats,
-            "daily_activity": daily_activity
+            "daily_activity": daily_activity,
+            "activities": activities
         }
 
     finally:
         connection.close()
 
+@app.route("/reports/export")
+def export_report():
+    """Export weekly or monthly activities as a CSV file."""
 
+    report_type = request.args.get("type", "weekly")
+
+    # Get the selected report data.
+    if report_type == "weekly":
+        week_offset = request.args.get("week", default=0, type=int)
+        report = get_weekly_report(week_offset)
+        filename = f"weekly_report_{report['week_start']}.csv"
+
+    elif report_type == "monthly":
+        month_offset = request.args.get("month", default=0, type=int)
+        report = get_monthly_report(month_offset)
+        filename = f"monthly_report_{report['month_start']}.csv"
+
+    else:
+        return "Invalid report type.", 400
+
+    # Prepare the CSV file in memory.
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # CSV column headings.
+    writer.writerow([
+        "Date",
+        "Time",
+        "Activity",
+        "Notes",
+        "Priority",
+        "Status"
+    ])
+
+    # Add activity records.
+    for activity in report["activities"]:
+        writer.writerow([
+            activity["activity_date"],
+            activity["activity_time"],
+            activity["title"],
+            activity["notes"],
+            activity["priority"],
+            activity["status"]
+        ])
+
+    # Send the CSV file to the browser.
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )       
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -3,13 +3,21 @@
 
 {% block content %}
 
+<!-- =====================================
+     WELCOME SECTION
+===================================== -->
+
 <section class="welcome">
     <p class="eyebrow">WORKSPACE / REPORTS</p>
     <h2>Activity Reports</h2>
     <p>Review your recorded activities and overall progress.</p>
 </section>
 
-<!-- Overall Statistics -->
+
+<!-- =====================================
+     OVERALL STATISTICS
+===================================== -->
+
 <section class="stats-grid">
 
     <article class="stat-card">
@@ -44,7 +52,11 @@
 
 </section>
 
-<!-- Report Overview -->
+
+<!-- =====================================
+     REPORT OVERVIEW
+===================================== -->
+
 <section class="content-card">
 
     <div class="section-heading">
@@ -84,12 +96,56 @@
 
 </section>
 
-<!-- Weekly Report -->
+
+<!-- =====================================
+     REPORT TABS
+===================================== -->
+
+<div class="report-tabs">
+
+    <a href="{{ url_for('reports', tab='weekly', week=week_offset) }}"
+       class="report-tab {% if active_tab == 'weekly' %}active{% endif %}">
+        Weekly Report
+    </a>
+
+    <a href="{{ url_for('reports', tab='monthly', month=month_offset) }}"
+       class="report-tab {% if active_tab == 'monthly' %}active{% endif %}">
+        Monthly Report
+    </a>
+
+</div>
+
+
+<!-- =====================================
+     TASK STATUS DISTRIBUTION
+     Visible on both tabs
+===================================== -->
+
+<div class="report-chart-container">
+
+    <h3>Task Status Distribution</h3>
+
+    <div class="chart-canvas-wrapper doughnut-wrapper">
+        <canvas id="statusChart"></canvas>
+    </div>
+
+</div>
+
+
+<!-- =====================================
+     WEEKLY REPORT
+===================================== -->
+
+{% if active_tab == "weekly" %}
+
 <section class="content-card">
 
+    <!-- Weekly Heading -->
     <div class="section-heading">
         <div>
+
             <p class="eyebrow">WEEKLY SUMMARY</p>
+
             <h2>This Week's Activities</h2>
 
             <p>
@@ -101,24 +157,26 @@
             <!-- Weekly Navigation -->
             <div class="week-navigation">
 
-                <a href="{{ url_for('reports', week=week_offset - 1) }}"
+                <a href="{{ url_for('reports', tab='weekly', week=week_offset - 1) }}"
                    class="clear-button">
                     &larr; Previous Week
                 </a>
 
-                <a href="{{ url_for('reports', week=0) }}"
+                <a href="{{ url_for('reports', tab='weekly', week=0) }}"
                    class="clear-button">
                     Current Week
                 </a>
 
-                <a href="{{ url_for('reports', week=week_offset + 1) }}"
+                <a href="{{ url_for('reports', tab='weekly', week=week_offset + 1) }}"
                    class="clear-button">
                     Next Week &rarr;
                 </a>
 
             </div>
+
         </div>
     </div>
+
 
     <!-- Weekly Statistics -->
     <section class="stats-grid">
@@ -149,7 +207,8 @@
 
     </section>
 
-    <!-- Daily Breakdown -->
+
+    <!-- Weekly Daily Breakdown -->
     <div class="section-heading" style="margin-top: 30px;">
         <div>
             <h2>Daily Breakdown</h2>
@@ -158,6 +217,7 @@
     </div>
 
     <div class="table-wrapper">
+
         <table>
             <thead>
                 <tr>
@@ -169,17 +229,19 @@
 
             <tbody>
                 {% for day in weekly_report.daily_activity %}
-                    <tr>
-                        <td>{{ day.day }}</td>
-                        <td>{{ day.date }}</td>
-                        <td>{{ day.total }}</td>
-                    </tr>
+                <tr>
+                    <td>{{ day.day }}</td>
+                    <td>{{ day.date }}</td>
+                    <td>{{ day.total }}</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+
     </div>
 
-    <!-- Activity Details -->
+
+    <!-- Weekly Activity Details -->
     <div class="section-heading" style="margin-top: 35px;">
         <div>
             <h2>Activity Details</h2>
@@ -190,6 +252,7 @@
     {% if weekly_report.activities %}
 
         <div class="table-wrapper">
+
             <table>
                 <thead>
                     <tr>
@@ -202,39 +265,41 @@
 
                 <tbody>
                     {% for activity in weekly_report.activities %}
-                        <tr>
-                            <td>
-                                {{ activity['activity_date'] }}
+                    <tr>
 
-                                {% if activity['activity_time'] %}
-                                    <br>
-                                    <small>
-                                        {{ activity['activity_time'] }}
-                                    </small>
-                                {% endif %}
-                            </td>
+                        <td>
+                            {{ activity['activity_date'] }}
 
-                            <td>
-                                <strong>{{ activity['title'] }}</strong>
+                            {% if activity['activity_time'] %}
+                                <br>
+                                <small>{{ activity['activity_time'] }}</small>
+                            {% endif %}
+                        </td>
 
-                                {% if activity['notes'] %}
-                                    <p class="activity-notes">
-                                        {{ activity['notes'] | truncate(120, true, '...') }}
-                                    </p>
-                                {% endif %}
-                            </td>
+                        <td>
+                            <strong>{{ activity['title'] }}</strong>
 
-                            <td>{{ activity['priority'] }}</td>
+                            {% if activity['notes'] %}
+                                <p class="activity-notes">
+                                    {{ activity['notes'] | truncate(120, true, '...') }}
+                                </p>
+                            {% endif %}
+                        </td>
 
-                            <td>
-                                <span class="status-badge">
-                                    {{ activity['status'] }}
-                                </span>
-                            </td>
-                        </tr>
+                        <td>{{ activity['priority'] }}</td>
+
+                        <td>
+                            <span class="status-badge">
+                                {{ activity['status'] }}
+                            </span>
+                        </td>
+
+                    </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
+
         </div>
 
     {% else %}
@@ -246,14 +311,38 @@
 
     {% endif %}
 
+
+    <!-- Weekly Activity Trend Chart -->
+    <div class="report-chart-container">
+
+        <h3>Weekly Activity Trend</h3>
+        <p>Number of activities recorded each day.</p>
+
+        <div class="chart-canvas-wrapper">
+            <canvas id="weeklyActivityChart"></canvas>
+        </div>
+
+    </div>
+
 </section>
 
-<!-- MONTHLY REPORT -->
+{% endif %}
+
+
+<!-- =====================================
+     MONTHLY REPORT
+===================================== -->
+
+{% if active_tab == "monthly" %}
+
+<!-- Monthly Summary -->
 <section class="content-card">
 
     <div class="section-heading">
         <div>
+
             <p class="eyebrow">MONTHLY SUMMARY</p>
+
             <h2>Monthly Activities</h2>
 
             <p>
@@ -265,24 +354,26 @@
             <!-- Monthly Navigation -->
             <div class="week-navigation">
 
-                <a href="{{ url_for('reports', month=month_offset - 1) }}"
+                <a href="{{ url_for('reports', tab='monthly', month=month_offset - 1) }}"
                    class="clear-button">
                     &larr; Previous Month
                 </a>
 
-                <a href="{{ url_for('reports', month=0) }}"
+                <a href="{{ url_for('reports', tab='monthly', month=0) }}"
                    class="clear-button">
                     Current Month
                 </a>
 
-                <a href="{{ url_for('reports', month=month_offset + 1) }}"
+                <a href="{{ url_for('reports', tab='monthly', month=month_offset + 1) }}"
                    class="clear-button">
                     Next Month &rarr;
                 </a>
 
             </div>
+
         </div>
     </div>
+
 
     <!-- Monthly Statistics -->
     <section class="stats-grid">
@@ -313,36 +404,212 @@
 
     </section>
 
-    <!-- Monthly Daily Breakdown -->
-    <div class="section-heading" style="margin-top: 30px;">
-        <div>
-            <h2>Daily Breakdown</h2>
-            <p>Activities recorded each day this month.</p>
+
+    <!-- Monthly Calendar -->
+    <div class="monthly-calendar-section">
+
+        <div class="section-heading">
+            <div>
+                <h2>Monthly Activity Calendar</h2>
+                <p>Select a date to see its activity count.</p>
+            </div>
         </div>
-    </div>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Day</th>
-                    <th>Date</th>
-                    <th>Total Activities</th>
-                </tr>
-            </thead>
+        <div class="calendar-wrapper">
 
-            <tbody>
-                {% for day in monthly_report.daily_activity %}
-                    <tr>
-                        <td>{{ day.day }}</td>
-                        <td>{{ day.date }}</td>
-                        <td>{{ day.total }}</td>
-                    </tr>
+            <!-- Calendar Weekdays -->
+            <div class="calendar-grid calendar-weekdays">
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+                <div>Sun</div>
+            </div>
+
+            <!-- Calendar Dates -->
+            <div class="calendar-grid calendar-days">
+
+                <!-- Empty spaces before first day -->
+                {% for blank in range(monthly_report.month_start.weekday()) %}
+                    <div class="calendar-day empty-day"></div>
                 {% endfor %}
-            </tbody>
-        </table>
+
+                <!-- Actual days -->
+                {% for day in monthly_report.daily_activity %}
+
+                    <div class="calendar-day
+                        {% if day.total > 0 %}has-activities{% endif %}
+                        {% if day.date == today %}today{% endif %}">
+
+                        <span class="calendar-date">
+                            {{ day.date[-2:] | int }}
+                        </span>
+
+                        {% if day.total > 0 %}
+
+                            <span class="calendar-activity-count">
+                                {{ day.total }}
+                                {{ 'activity' if day.total == 1 else 'activities' }}
+                            </span>
+
+                            <span class="calendar-dot"></span>
+
+                        {% else %}
+
+                            <span class="calendar-no-activity">
+                                No activity
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+                <!-- Empty spaces after last day -->
+                {% for blank in range((7 - ((monthly_report.month_start.weekday() + monthly_report.month_end.day) % 7)) % 7) %}
+                    <div class="calendar-day empty-day"></div>
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Calendar Legend -->
+        <div class="calendar-legend">
+
+            <div class="legend-item">
+                <span class="legend-dot activity-legend"></span>
+                <span>Has activities</span>
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot today-legend"></span>
+                <span>Today</span>
+            </div>
+
+        </div>
+
     </div>
 
 </section>
+
+
+<!-- Monthly Activity Details -->
+<section class="content-card">
+
+    <div class="section-heading">
+        <div>
+            <h2>Activity Details</h2>
+            <p>All activities recorded during this month.</p>
+        </div>
+    </div>
+
+    {% if monthly_report.activities %}
+
+        <div class="table-wrapper monthly-activity-table">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Activity</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for activity in monthly_report.activities %}
+                    <tr>
+
+                        <td>{{ activity.activity_date }}</td>
+
+                        <td>{{ activity.activity_time or '-' }}</td>
+
+                        <td>
+                            <strong>{{ activity.title }}</strong>
+                            <br>
+                            <small>
+                                {{ (activity.notes or 'No notes provided.') | truncate(100) }}
+                            </small>
+                        </td>
+
+                        <td>{{ activity.priority }}</td>
+
+                        <td>
+                            <span class="status-badge">
+                                {{ activity.status }}
+                            </span>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+            <h3>No activities recorded for this month.</h3>
+            <p>Your monthly activities will appear here once you record them.</p>
+        </div>
+
+    {% endif %}
+
+</section>
+
+
+<!-- Monthly Activity Trend Chart -->
+<div class="report-chart-container">
+
+    <h3>Monthly Activity Trend</h3>
+    <p>Daily activity records for the selected month.</p>
+
+    <div class="chart-canvas-wrapper monthly-chart-wrapper">
+        <canvas id="monthlyActivityChart"></canvas>
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- =====================================
+     REPORT CHART DATA
+===================================== -->
+
+<script id="reportChartData" type="application/json">
+    {{ {
+        "stats": {
+            "completed": stats.completed or 0,
+            "in_progress": stats.in_progress or 0,
+            "pending": stats.pending or 0
+        },
+        "weekly": {
+            "labels": weekly_report.daily_activity | map(attribute='day') | list,
+            "values": weekly_report.daily_activity | map(attribute='total') | list
+        },
+        "monthly": {
+            "labels": monthly_report.daily_activity | map(attribute='date') | list,
+            "values": monthly_report.daily_activity | map(attribute='total') | list
+        }
+    } | tojson }}
+</script>
+
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<!-- External Report JavaScript -->
+<script src="{{ url_for('static', filename='reports.js') }}"></script>
+
 
 {% endblock %}
