@@ -529,6 +529,14 @@ nav {
     color: #FFFFFF;
 }
 
+.report-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
 
 /* =========================================
    WORK HISTORY PAGINATION

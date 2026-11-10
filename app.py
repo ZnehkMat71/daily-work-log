@@ -2,6 +2,11 @@
 from datetime import date, datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash, Response
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from database import get_connection, initialize_database
 import csv
@@ -752,29 +757,26 @@ def get_monthly_report(month_offset=0):
 
 @app.route("/reports/export")
 def export_report():
-    """Export weekly or monthly activities as a CSV file."""
+    """Export the currently selected weekly or monthly report as CSV."""
 
-    report_type = request.args.get("type", "weekly")
+    report_type = request.args.get("type", "weekly", type=str).strip().lower()
 
-    # Get the selected report data.
     if report_type == "weekly":
         week_offset = request.args.get("week", default=0, type=int)
         report = get_weekly_report(week_offset)
-        filename = f"weekly_report_{report['week_start']}.csv"
+        filename = f"weekly_report_{report['week_start'].strftime('%Y-%m-%d')}.csv"
 
     elif report_type == "monthly":
         month_offset = request.args.get("month", default=0, type=int)
         report = get_monthly_report(month_offset)
-        filename = f"monthly_report_{report['month_start']}.csv"
+        filename = f"monthly_report_{report['month_start'].strftime('%Y-%m')}.csv"
 
     else:
         return "Invalid report type.", 400
 
-    # Prepare the CSV file in memory.
-    output = io.StringIO()
-    writer = csv.writer(output)
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\n")
 
-    # CSV column headings.
     writer.writerow([
         "Date",
         "Time",
@@ -784,25 +786,236 @@ def export_report():
         "Status"
     ])
 
-    # Add activity records.
-    for activity in report["activities"]:
+    for activity in report.get("activities", []):
         writer.writerow([
-            activity["activity_date"],
-            activity["activity_time"],
-            activity["title"],
-            activity["notes"],
-            activity["priority"],
-            activity["status"]
+            activity["activity_date"] if "activity_date" in activity.keys() else "",
+            activity["activity_time"] if "activity_time" in activity.keys() else "",
+            activity["title"] if "title" in activity.keys() else "",
+            activity["notes"] if "notes" in activity.keys() else "",
+            activity["priority"] if "priority" in activity.keys() else "",
+            activity["status"] if "status" in activity.keys() else ""
         ])
 
-    # Send the CSV file to the browser.
+    csv_data = output.getvalue().encode("utf-8-sig")
+
     return Response(
-        output.getvalue(),
-        mimetype="text/csv",
+        csv_data,
+        content_type="text/csv; charset=utf-8-sig",
         headers={
             "Content-Disposition": f"attachment; filename={filename}"
         }
-    )       
+    )
+
+
+def _get_report_export_data(report_type, week_offset=None, month_offset=None):
+    """Return the selected report payload and filename details."""
+
+    if report_type == "weekly":
+        offset = int(week_offset or 0)
+        report = get_weekly_report(offset)
+        title = "Weekly Report"
+        date_range = f"{report['week_start'].strftime('%B %d, %Y')} - {report['week_end'].strftime('%B %d, %Y')}"
+        filename = f"weekly_report_{report['week_start'].strftime('%Y-%m-%d')}.pdf"
+        return report, title, date_range, filename
+
+    if report_type == "monthly":
+        offset = int(month_offset or 0)
+        report = get_monthly_report(offset)
+        title = "Monthly Report"
+        date_range = f"{report['month_start'].strftime('%B %d, %Y')} - {report['month_end'].strftime('%B %d, %Y')}"
+        filename = f"monthly_report_{report['month_start'].strftime('%Y-%m')}.pdf"
+        return report, title, date_range, filename
+
+    raise ValueError("Invalid report type.")
+
+
+def _build_pdf_report(report_type, week_offset=None, month_offset=None):
+    """Generate a PDF document for the selected report."""
+
+    report, title, date_range, filename = _get_report_export_data(
+        report_type,
+        week_offset=week_offset,
+        month_offset=month_offset,
+    )
+
+    buffer = io.BytesIO()
+    styles = getSampleStyleSheet()
+
+    def page_setup(canvas_obj, doc):
+        canvas_obj.saveState()
+        canvas_obj.setFillColor(colors.HexColor("#111827"))
+        canvas_obj.setFont("Helvetica-Bold", 10)
+        canvas_obj.drawString(36, 780, "Daily Work Log & Task Tracker")
+        canvas_obj.setFont("Helvetica", 8)
+        canvas_obj.drawRightString(576, 780, f"{title} - {date_range}")
+        canvas_obj.setFont("Helvetica", 8)
+        canvas_obj.setFillColor(colors.HexColor("#475569"))
+        canvas_obj.drawString(36, 32, "Daily Work Log & Task Tracker")
+        canvas_obj.drawRightString(576, 32, f"Page {canvas_obj.getPageNumber()}")
+        canvas_obj.restoreState()
+
+    summary_title_style = ParagraphStyle(
+        "reportTitle",
+        parent=styles["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        textColor=colors.HexColor("#1D4ED8"),
+        spaceAfter=8,
+        leading=22,
+    )
+
+    heading_style = ParagraphStyle(
+        "sectionHeading",
+        parent=styles["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        textColor=colors.HexColor("#0F172A"),
+        spaceBefore=12,
+        spaceAfter=8,
+    )
+
+    body_style = ParagraphStyle(
+        "bodyText",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=12,
+        textColor=colors.HexColor("#1F2937"),
+    )
+
+    small_style = ParagraphStyle(
+        "smallText",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
+        textColor=colors.HexColor("#374151"),
+    )
+
+    story = [
+        Paragraph("Daily Work Log & Task Tracker", summary_title_style),
+        Paragraph(title, heading_style),
+        Paragraph(f"Period: {date_range}", body_style),
+        Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", small_style),
+        Spacer(1, 18),
+        Paragraph("Summary", heading_style),
+    ]
+
+    stats = report.get("stats") or {}
+    summary_table = Table([
+        ["Metric", "Value"],
+        ["Total activities", str(stats["total"] if stats and "total" in stats.keys() else 0)],
+        ["Completed", str(stats["completed"] if stats and "completed" in stats.keys() else 0)],
+        ["In Progress", str(stats["in_progress"] if stats and "in_progress" in stats.keys() else 0)],
+        ["Pending", str(stats["pending"] if stats and "pending" in stats.keys() else 0)],
+    ], colWidths=[2.8 * 72, 1.4 * 72])
+
+    summary_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E3A5F")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("GRID", (0, 0), (-1, -1), 0.8, colors.HexColor("#CBD5E1")),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#F8FAFC")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+
+    story.append(summary_table)
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("Activity Details", heading_style))
+
+    activities = report.get("activities") or []
+
+    if not activities:
+        story.append(Paragraph("No activities recorded for this report period.", body_style))
+    else:
+        table_rows = [["Date", "Time", "Activity", "Notes", "Priority", "Status"]]
+
+        for activity in activities:
+            notes = activity["notes"] if "notes" in activity.keys() else ""
+            if not notes:
+                notes = "No notes provided."
+
+            table_rows.append([
+                activity["activity_date"] if "activity_date" in activity.keys() else "",
+                activity["activity_time"] if "activity_time" in activity.keys() else "-",
+                Paragraph(activity["title"] if "title" in activity.keys() else "Untitled", body_style),
+                Paragraph(notes, small_style),
+                activity["priority"] if "priority" in activity.keys() else "",
+                activity["status"] if "status" in activity.keys() else "",
+            ])
+
+        activity_table = Table(
+            table_rows,
+            repeatRows=1,
+            colWidths=[0.65 * 72, 0.55 * 72, 1.1 * 72, 2.1 * 72, 0.7 * 72, 0.8 * 72],
+        )
+
+        activity_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8),
+            ("GRID", (0, 0), (-1, -1), 0.7, colors.HexColor("#CBD5E1")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+        ]))
+
+        story.append(activity_table)
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=48,
+        bottomMargin=48,
+    )
+
+    doc.build(story, onFirstPage=page_setup, onLaterPages=page_setup)
+
+    pdf_data = buffer.getvalue()
+    buffer.close()
+
+    return pdf_data, filename
+
+
+@app.route("/reports/export/pdf")
+def export_report_pdf():
+    """Download the currently selected report as a PDF file."""
+
+    report_type = request.args.get("type", "weekly", type=str).strip().lower()
+
+    try:
+        if report_type == "weekly":
+            week_offset = request.args.get("week", default=0, type=int)
+            pdf_data, filename = _build_pdf_report(report_type, week_offset=week_offset)
+        elif report_type == "monthly":
+            month_offset = request.args.get("month", default=0, type=int)
+            pdf_data, filename = _build_pdf_report(report_type, month_offset=month_offset)
+        else:
+            return "Invalid report type.", 400
+    except ValueError:
+        return "Invalid report type.", 400
+    except Exception:
+        return "Unable to generate the PDF report right now.", 500
+
+    return Response(
+        pdf_data,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
