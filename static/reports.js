@@ -2,6 +2,29 @@
 document.addEventListener("DOMContentLoaded", function () {
     initializeCalendarSelection();
 
+    document.querySelectorAll("[data-print-report]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            if (typeof Chart !== "undefined") {
+                document.querySelectorAll(".report-chart-container canvas").forEach(function (canvas) {
+                    const chart = Chart.getChart(canvas);
+                    if (!chart) {
+                        return;
+                    }
+
+                    chart.stop();
+                    chart.resize();
+                    chart.update("none");
+                });
+            }
+
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(function () {
+                    window.print();
+                });
+            });
+        });
+    });
+
     // =====================================
     // 1. LOAD REPORT DATA
     // =====================================
@@ -205,6 +228,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+        statusCanvas.closest(".chart-canvas-wrapper").dataset.chartReady = "true";
     }
 
 
@@ -288,6 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+        weeklyCanvas.closest(".chart-canvas-wrapper").dataset.chartReady = "true";
     }
 
 
@@ -383,6 +408,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         });
+        monthlyCanvas.closest(".chart-canvas-wrapper").dataset.chartReady = "true";
     }
 
     const reportCanvases = [
@@ -402,6 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             chart.$printing = true;
+            chart.stop();
 
             if (chart.options.plugins.legend) {
                 chart.options.plugins.legend.labels.color = "#334155";
@@ -451,11 +478,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    document.querySelectorAll("[data-print-report]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            window.print();
-        });
-    });
 });
 
 function initializeCalendarSelection() {
@@ -470,6 +492,7 @@ function initializeCalendarSelection() {
     const defaultActivityHeading = activityHeading
         ? activityHeading.textContent
         : "";
+    let selectedDateBeforePrint = "";
 
     function selectCalendarDate(selectedDate) {
         let visibleRows = 0;
@@ -532,4 +555,23 @@ function initializeCalendarSelection() {
             selectCalendarDate("");
         });
     }
+
+    window.addEventListener("beforeprint", function () {
+        const selectedButton = Array.from(calendarButtons).find(function (button) {
+            return button.getAttribute("aria-pressed") === "true";
+        });
+        selectedDateBeforePrint = selectedButton
+            ? selectedButton.dataset.calendarDate
+            : "";
+        if (selectedDateBeforePrint) {
+            selectCalendarDate("");
+        }
+    });
+
+    window.addEventListener("afterprint", function () {
+        if (selectedDateBeforePrint) {
+            selectCalendarDate(selectedDateBeforePrint);
+            selectedDateBeforePrint = "";
+        }
+    });
 }

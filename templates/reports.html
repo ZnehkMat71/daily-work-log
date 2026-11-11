@@ -117,6 +117,32 @@
 
 </div>
 
+<header class="print-report-header">
+    <p class="print-application-name">Daily Work Log &amp; Task Tracker</p>
+    {% if active_tab == "weekly" %}
+        <h1>Weekly Activity Report</h1>
+        <p class="print-report-period">
+            {{ weekly_report.week_start.strftime('%B %d, %Y') }}
+            - {{ weekly_report.week_end.strftime('%B %d, %Y') }}
+        </p>
+        <p>{{ weekly_report.activities|length }} matching {{ 'activity' if weekly_report.activities|length == 1 else 'activities' }}</p>
+    {% else %}
+        <h1>Monthly Activity Report</h1>
+        <p class="print-report-period">{{ monthly_report.month_start.strftime('%B %Y') }}</p>
+        <p>{{ monthly_report.activities|length }} matching {{ 'activity' if monthly_report.activities|length == 1 else 'activities' }}</p>
+    {% endif %}
+    <p class="print-filter-summary">
+        <strong>Applied filters:</strong>
+        {% if report_filters.status or report_filters.priority or report_filters.search %}
+            {% if report_filters.status %}<span>Status: {{ report_filters.status }}</span>{% endif %}
+            {% if report_filters.priority %}<span>Priority: {{ report_filters.priority }}</span>{% endif %}
+            {% if report_filters.search %}<span>Search: {{ report_filters.search }}</span>{% endif %}
+        {% else %}
+            <span>None (all activities)</span>
+        {% endif %}
+    </p>
+</header>
+
 
 <!-- =====================================
      TASK STATUS DISTRIBUTION
@@ -129,6 +155,12 @@
 
     <div class="chart-canvas-wrapper doughnut-wrapper">
         <canvas id="statusChart"></canvas>
+    </div>
+    <p class="print-chart-summary">
+        Completed: {{ (weekly_report.stats.completed if active_tab == 'weekly' else monthly_report.stats.completed) or 0 }}
+        &bull; In Progress: {{ (weekly_report.stats.in_progress if active_tab == 'weekly' else monthly_report.stats.in_progress) or 0 }}
+        &bull; Pending: {{ (weekly_report.stats.pending if active_tab == 'weekly' else monthly_report.stats.pending) or 0 }}
+    </p>
 </div>
 
 
@@ -138,7 +170,7 @@
 
 {% if active_tab == "weekly" %}
 
-<section class="content-card">
+<section class="content-card weekly-report-content">
 
     <!-- Weekly Heading -->
     <div class="section-heading">
@@ -390,7 +422,7 @@
 {% if active_tab == "monthly" %}
 
 <!-- Monthly Summary -->
-<section class="content-card">
+<section class="content-card monthly-report-content">
 
     <div class="section-heading">
         <div>

@@ -16,7 +16,8 @@ on their own computer.
 - Work History search, date filtering, and pagination.
 - Weekly and monthly reports with status, priority, and keyword filters.
 - Interactive monthly calendar and report charts.
-- CSV and PDF report downloads.
+- CSV and PDF report downloads, plus print-ready weekly and monthly reports.
+- Browser printing and Save as PDF with the selected period and report filters.
 - SQLite database backup and restore, including validation and a pre-restore
   safety backup.
 - Session-bound CSRF protection for state-changing forms.
@@ -115,6 +116,13 @@ The management endpoints are restricted to loopback clients, and `python app.py`
 binds to `127.0.0.1`. Do not expose this single-user application or its restore
 feature to a network without adding authentication and access control.
 
+## Print reports
+
+Open **Reports**, select the weekly or monthly tab and period, and choose
+**Print Report**. The browser print dialog can send the report to a printer or
+save it as a PDF. The printed report keeps the selected period and filters;
+this is separate from the existing downloadable PDF export.
+
 ## Screenshots
 
 Screenshots are not included yet. Add portfolio images here when available:
@@ -129,7 +137,7 @@ Screenshots are not included yet. Add portfolio images here when available:
 - This is a local, single-user application and does not provide user accounts.
 - Chart.js is fetched from jsDelivr, so charts require network access unless the
   library is served locally.
+- Browser print and Save as PDF output can vary with browser and print-dialog
+  paper, margin, and scale settings.
 - No automated test suite is included in the repository; see
   `PROJECT_STATUS.md` for the manual and isolated-database checks performed.
-- Print styling is present, but Phase 3 was explicitly skipped in the project
-  roadmap and has not been certified as a completed phase.

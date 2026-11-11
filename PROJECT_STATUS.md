@@ -75,9 +75,36 @@ Status: Completed and verified.
 ---
 
 ## Phase 3: Print-Friendly Reports
-Status: Skipped by user; not counted as a completed roadmap phase.
+Status: Completed and verified after Phase 8.
 
-Existing print-related code remains unchanged during Phase 4.
+### Changes made
+- Added a print-only report heading with the application name, selected week or month, matching activity count, and applied status, priority, and keyword filters.
+- Updated print styling to hide navigation, tabs, filters, and export controls while retaining the selected report's filtered summaries, activity details, status distribution, daily breakdown, and monthly calendar.
+- Added a text status summary as a readable fallback when charts are unavailable, and prepared Chart.js charts before opening the browser print dialog.
+- Temporarily clears monthly calendar date selection while printing so the full filtered month is included, then restores the selected date after printing.
+- Corrected a missing status-chart wrapper close tag and print-only table sizing that could cause horizontal overflow.
+- Kept browser printing separate from the existing server-generated PDF export.
+
+### Files modified
+- templates/reports.html
+- static/reports.js
+- static/style.css
+- README.md
+- PROJECT_STATUS.md
+
+### Tests performed
+- `python -m py_compile app.py`
+- `node --check static/reports.js`
+- `git diff --check`
+- Isolated Flask test-client checks for weekly/monthly print headings, period and filters, selected-tab chart payloads, and filtered CSV/PDF export responses.
+- Browser checks verified selected-tab-only output, filter and navigation/export query preservation, chart initialization, calendar selection restoration, and hidden screen controls in print media.
+- Checked screen and print-media layouts at 375px; the selected report tables fit without horizontal overflow.
+- Verified the Print Report button still opens the native print flow when Chart.js is unavailable; chart areas are omitted while the textual status summary remains.
+- Generated browser Save-as-PDF output with 160 temporary activities; the weekly report spanned 6 pages and the monthly report 13 pages. No destructive tests used the application database.
+
+### Remaining limitations
+- Print output can vary with browser and print-dialog paper, margin, and scale settings.
+- Chart.js is loaded from a CDN; when it is unavailable, the print layout retains textual status and activity breakdowns.
 
 ### Next task
 - Phase 4: Activity Editing and Deletion
@@ -303,7 +330,7 @@ Status: Completed and verified.
 - The application has no user accounts or authentication. Keep it local; do not expose it to a network without adding access control.
 - Charts require internet access while Chart.js is loaded from jsDelivr.
 - No automated test suite is included; the verification above used isolated test scripts and browser checks.
-- Phase 3 print-friendly reports remains skipped as previously directed.
+- Browser printing and Save as PDF depend on the browser's print implementation and user-selected print settings.
 
 ### Run the application
 From PowerShell in the project folder:
