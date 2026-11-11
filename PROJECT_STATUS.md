@@ -1,5 +1,42 @@
 # Project Status
 
+## UI/UX Redesign — Stage 1: Design System and Application Shell
+Status: Completed and verified.
+
+### Changes made
+- Established shared CSS design tokens for the charcoal/blue palette, typography, 4px spacing scale, radius, elevation, sidebar dimensions, transitions, and focus states.
+- Reworked the shared application shell with grouped Workspace/System navigation, active-route semantics, inline icons, compact page context, and a persistent desktop sidebar collapse control.
+- Added a saved desktop collapse preference and a mobile slide-out drawer with overlay, focus management, Escape-to-close, and navigation-close behavior.
+- Applied consistent shared button, form-control, table, card, badge, alert, and empty-state styling while retaining legacy page class names.
+- Added reduced-motion support and responsive shell rules without changing routes, page content, database logic, or export behavior.
+
+### Files modified
+- templates/base.html
+- static/style.css
+- static/app.js
+- README.md
+- PROJECT_STATUS.md
+
+### Tests performed
+- `python -m py_compile app.py database.py`
+- `node --check static/app.js`, `node --check static/reports.js`, and `node --check static/dashboard.js`
+- `git diff --check`
+- Temporary-database Flask smoke checks for Dashboard, Add Activity, Work History, Edit Activity, weekly/monthly Reports, Database Management, weekly/monthly CSV/PDF exports, and database backup.
+- Verified temporary-database activity add, edit, and delete still work with CSRF; rejected an invalid restore upload without affecting the temporary database.
+- Browser verified desktop sidebar collapse, icon labels and accessible names, preference persistence after navigation, active-route indication, and links between sections.
+- Browser verified the mobile drawer, overlay dismissal, Escape dismissal and focus restoration, background inertness, focus wrapping, and navigation-close behavior.
+- Browser checked 1440px, 1024px, 768px, and 375px layouts without horizontal page overflow; verified the mobile Add Activity form and Database Management controls remain usable.
+- Browser verified Dashboard charts, report charts and calendar render, and print media still hides navigation while showing the selected report.
+- Tests and temporary activity records used an isolated SQLite database; the configured application database was not changed.
+
+### Remaining issues
+- None identified in Stage 1 verification.
+
+### Next task
+- UI/UX Redesign — Stage 2 (not started)
+
+---
+
 ## Phase 1: CSV Report Export
 Status: Complete and validated.
 

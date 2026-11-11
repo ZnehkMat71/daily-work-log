@@ -21,6 +21,8 @@ on their own computer.
 - SQLite database backup and restore, including validation and a pre-restore
   safety backup.
 - Session-bound CSRF protection for state-changing forms.
+- Responsive dark dashboard shell with persistent sidebar navigation and
+  keyboard-accessible mobile navigation.
 
 ## Technology
 
@@ -41,6 +43,7 @@ Daily Work Log/
 ├── daily_work_log.db          # Created locally; excluded from Git
 ├── database_backups/          # Created for pre-restore safety backups; excluded
 ├── static/
+│   ├── app.js
 │   ├── dashboard.js
 │   ├── reports.js
 │   └── style.css
