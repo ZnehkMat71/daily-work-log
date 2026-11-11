@@ -1,7 +1,10 @@
 
 from datetime import date, datetime, timedelta
+import hmac
+import ipaddress
 import os
 from pathlib import Path
+import secrets
 import shutil
 import sqlite3
 import tempfile
@@ -15,11 +18,11 @@ from flask import (
     flash,
     Response,
     send_file,
+    session,
 )
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     LongTable,
     Paragraph,
@@ -36,11 +39,101 @@ from xml.sax.saxutils import escape
 
 
 app = Flask(__name__)
-app.secret_key = "change-this-to-a-random-secret-before-deployment"
+def load_flask_secret_key():
+    """Load a stable local secret or use a configured environment value."""
+
+    configured_secret = os.environ.get("FLASK_SECRET_KEY")
+    if configured_secret:
+        if len(configured_secret) < 32:
+            raise RuntimeError("FLASK_SECRET_KEY must contain at least 32 characters.")
+        return configured_secret
+
+    secret_path = Path(__file__).with_name(".flask_secret_key")
+    try:
+        with secret_path.open("x", encoding="utf-8") as secret_file:
+            generated_secret = secrets.token_hex(32)
+            secret_file.write(generated_secret)
+            return generated_secret
+    except FileExistsError:
+        pass
+    except OSError as error:
+        raise RuntimeError(
+            "Unable to create the local Flask secret. Set FLASK_SECRET_KEY."
+        ) from error
+
+    try:
+        existing_secret = secret_path.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        raise RuntimeError(
+            "Unable to read the local Flask secret. Set FLASK_SECRET_KEY."
+        ) from error
+
+    if len(existing_secret) < 32:
+        raise RuntimeError(
+            "The local Flask secret is invalid. Remove .flask_secret_key or set FLASK_SECRET_KEY."
+        )
+
+    return existing_secret
+
+
+app.secret_key = load_flask_secret_key()
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 # Make sure the existing database and table are available.
 initialize_database()
+
+
+def get_csrf_token():
+    """Return a session-bound token for state-changing form submissions."""
+
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_urlsafe(32)
+    return session["_csrf_token"]
+
+
+@app.context_processor
+def inject_csrf_token():
+    """Make the CSRF token helper available to application templates."""
+
+    return {"csrf_token": get_csrf_token}
+
+
+@app.before_request
+def protect_state_changing_requests():
+    """Require a valid session token for every POST request."""
+
+    if request.method != "POST":
+        return None
+
+    expected_token = session.get("_csrf_token", "")
+    submitted_token = request.form.get("_csrf_token", "")
+    if not expected_token or not submitted_token or not hmac.compare_digest(
+        expected_token,
+        submitted_token,
+    ):
+        return "Invalid or missing CSRF token.", 400
+
+    return None
+
+
+@app.before_request
+def restrict_database_management_to_local_clients():
+    """Keep backup and restore endpoints available only to loopback clients."""
+
+    if not request.path.startswith("/database"):
+        return None
+
+    try:
+        client_address = ipaddress.ip_address(request.remote_addr or "")
+    except ValueError:
+        return "Database management is only available to local clients.", 403
+
+    if not client_address.is_loopback:
+        return "Database management is only available to local clients.", 403
+
+    return None
 
 
 def is_valid_time(value):
@@ -470,9 +563,6 @@ def dashboard():
     chart_data = get_dashboard_chart_data()
 
     # Diagnostic messages to help find the display problem.
-    print("Recent activities found:", len(recent_activities))
-    print("Recent activities:", [dict(a) for a in recent_activities])
-
     return render_template(
         "index.html",
         page_title="Dashboard",
@@ -768,6 +858,256 @@ def reports():
         monthly_report=monthly_report,
         month_offset=month_offset,
     )
+
+
+def _backup_database_to(destination):
+    """Create a consistent SQLite snapshot at an application-chosen path."""
+
+    source_connection = get_connection()
+    destination_connection = None
+
+    try:
+        destination_connection = sqlite3.connect(str(destination))
+        source_connection.backup(destination_connection)
+    finally:
+        if destination_connection is not None:
+            destination_connection.close()
+        source_connection.close()
+
+
+def _validate_backup_database(database_path):
+    """Check SQLite integrity and the required application schema."""
+
+    required_columns = {
+        "id",
+        "activity_date",
+        "activity_time",
+        "title",
+        "notes",
+        "priority",
+        "status",
+        "created_at",
+    }
+    database_uri = f"{Path(database_path).resolve().as_uri()}?mode=ro"
+    connection = None
+
+    try:
+        connection = sqlite3.connect(database_uri, uri=True)
+        integrity_results = connection.execute("PRAGMA quick_check").fetchall()
+        if not integrity_results or any(result[0] != "ok" for result in integrity_results):
+            raise ValueError("The uploaded file failed SQLite integrity checks.")
+
+        table_exists = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ("activities",),
+        ).fetchone()
+        if table_exists is None:
+            raise ValueError("The uploaded database does not contain the activities table.")
+
+        actual_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(activities)")
+        }
+        if not required_columns.issubset(actual_columns):
+            raise ValueError("The uploaded database is not compatible with this application.")
+    except sqlite3.Error as error:
+        raise ValueError("The uploaded file is not a valid SQLite database.") from error
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+def _create_safety_backup():
+    """Save a consistent pre-restore backup beside the application database."""
+
+    database_path = Path(DATABASE_PATH)
+    if not database_path.is_file():
+        raise FileNotFoundError("The current application database is missing.")
+
+    backup_directory = database_path.parent / "database_backups"
+    backup_directory.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    backup_path = backup_directory / f"pre_restore_backup_{timestamp}.sqlite3"
+
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix=".pre_restore_backup_",
+            suffix=".sqlite3",
+            dir=backup_directory,
+            delete=False,
+        ) as temporary_file:
+            temporary_path = temporary_file.name
+
+        _backup_database_to(temporary_path)
+        os.replace(temporary_path, backup_path)
+        temporary_path = None
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            os.remove(temporary_path)
+
+    return backup_path
+
+
+@app.errorhandler(413)
+def request_entity_too_large(_error):
+    """Show a useful message when a restore upload exceeds the size limit."""
+
+    flash("The backup file exceeds the 64 MB upload limit.", "error")
+    return redirect(url_for("database_management"))
+
+
+@app.route("/database")
+def database_management():
+    """Display database backup and restore controls."""
+
+    return render_template(
+        "database_management.html",
+        page_title="Database Management",
+        active_page="database_management",
+    )
+
+
+@app.route("/database/backup")
+def download_database_backup():
+    """Download a consistent SQLite snapshot of the application database."""
+
+    if not Path(DATABASE_PATH).is_file():
+        flash("The application database is unavailable, so a backup cannot be created.", "error")
+        return redirect(url_for("database_management"))
+
+    temporary_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix="daily_work_log_backup_",
+            suffix=".sqlite3",
+            delete=False,
+        ) as temporary_file:
+            temporary_path = temporary_file.name
+
+        _backup_database_to(temporary_path)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        response = send_file(
+            temporary_path,
+            mimetype="application/vnd.sqlite3",
+            as_attachment=True,
+            download_name=f"daily_work_log_backup_{timestamp}.sqlite3",
+        )
+
+        def remove_temporary_backup():
+            try:
+                os.remove(temporary_path)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                app.logger.warning("Unable to remove a temporary database backup file.")
+
+        response.call_on_close(remove_temporary_backup)
+        return response
+    except (OSError, sqlite3.Error):
+        app.logger.exception("Unable to create the requested database backup.")
+        if temporary_path and os.path.exists(temporary_path):
+            try:
+                os.remove(temporary_path)
+            except OSError:
+                app.logger.warning("Unable to remove a failed temporary database backup.")
+        flash("Unable to create a database backup right now.", "error")
+        return redirect(url_for("database_management"))
+
+
+@app.route("/database/restore", methods=["POST"])
+def restore_database_backup():
+    """Validate and atomically restore an uploaded application backup."""
+
+    upload = request.files.get("backup_file")
+    if upload is None or not upload.filename:
+        flash("Choose a database backup file to restore.", "error")
+        return redirect(url_for("database_management"))
+
+    if Path(upload.filename).suffix.lower() not in (".sqlite", ".sqlite3", ".db"):
+        flash("Choose a SQLite backup file with a .sqlite, .sqlite3, or .db extension.", "error")
+        return redirect(url_for("database_management"))
+
+    database_path = Path(DATABASE_PATH)
+    if not database_path.is_file():
+        flash("The current application database is unavailable; a safe restore cannot be performed.", "error")
+        return redirect(url_for("database_management"))
+
+    upload_path = None
+    staged_path = None
+    replaced_database = False
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix="daily_work_log_upload_",
+            suffix=".sqlite3",
+            delete=False,
+        ) as temporary_upload:
+            upload_path = temporary_upload.name
+            upload.save(temporary_upload)
+
+        if os.path.getsize(upload_path) == 0:
+            raise ValueError("The uploaded backup file is empty.")
+
+        _validate_backup_database(upload_path)
+        safety_backup_path = _create_safety_backup()
+
+        with tempfile.NamedTemporaryFile(
+            prefix=".daily_work_log_restore_",
+            suffix=".sqlite3",
+            dir=database_path.parent,
+            delete=False,
+        ) as staged_file:
+            staged_path = staged_file.name
+
+        shutil.copyfile(upload_path, staged_path)
+        _validate_backup_database(staged_path)
+        os.replace(staged_path, database_path)
+        staged_path = None
+        replaced_database = True
+
+        restored_connection = None
+        try:
+            restored_connection = get_connection()
+            restored_connection.execute("SELECT COUNT(*) FROM activities").fetchone()
+        finally:
+            if restored_connection is not None:
+                restored_connection.close()
+
+        flash(
+            "Database restored successfully. A safety backup of the previous data was created.",
+            "success",
+        )
+    except ValueError as error:
+        flash(str(error), "error")
+    except (OSError, sqlite3.Error) as error:
+        app.logger.exception("Unable to restore the uploaded database backup.")
+        if replaced_database:
+            try:
+                rollback_path = database_path.with_name(
+                    f".{database_path.name}.rollback.sqlite3"
+                )
+                shutil.copyfile(safety_backup_path, rollback_path)
+                os.replace(rollback_path, database_path)
+            except (OSError, sqlite3.Error):
+                app.logger.exception("Unable to restore the pre-restore safety backup.")
+                flash(
+                    "Restore failed and automatic recovery was unsuccessful. The safety backup was retained.",
+                    "error",
+                )
+            else:
+                flash("Restore failed. The original database was recovered from its safety backup.", "error")
+        else:
+            flash("Unable to restore that database backup. The current database was not replaced.", "error")
+    finally:
+        for temporary_path in (upload_path, staged_path):
+            if temporary_path and os.path.exists(temporary_path):
+                try:
+                    os.remove(temporary_path)
+                except OSError:
+                    app.logger.warning("Unable to remove a temporary restore file.")
+
+    return redirect(url_for("database_management"))
 
 
 def get_monthly_report(month_offset=0, filters=None):
@@ -1242,4 +1582,4 @@ def export_report_pdf():
     )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="127.0.0.1", debug=False)

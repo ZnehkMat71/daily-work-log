@@ -20,8 +20,13 @@ secret configuration.
 - Do not expose the restore feature through a network-facing deployment without
   adding authentication and access control.
 
-## Review status
+## Remediation status
 
-This finding was reported before the Phase 8 remediation. The Phase 8 work is
-adding CSRF protection and documenting the local-only limitation; it does not add
-an account or authentication system.
+- Session-bound CSRF validation is applied to all POST requests and tokens are
+  included in the add, edit, delete, and restore forms.
+- Database management routes reject non-loopback clients, and the built-in
+  server binds to `127.0.0.1`.
+- A private, ignored local Flask signing key is generated when
+  `FLASK_SECRET_KEY` is not configured.
+- The application still has no accounts. Do not expose it to a network without
+  adding authentication and access control.

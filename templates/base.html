@@ -43,6 +43,11 @@
                class="nav-link {% if active_page == 'reports' %}active{% endif %}">
                 Reports
             </a>
+
+            <a href="{{ url_for('database_management') }}"
+               class="nav-link {% if active_page == 'database_management' %}active{% endif %}">
+                Database
+            </a>
         </nav>
 
         <div class="sidebar-footer">

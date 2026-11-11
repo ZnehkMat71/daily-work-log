@@ -124,7 +124,7 @@ Status: Completed and verified.
 - The project does not currently have CSRF protection; none was present in the existing security setup, and no new dependency was introduced in this phase.
 
 ### Next task
-- Phase 6: Report Filters and Calendar Improvements
+- Phase 5: Dashboard Analytics Improvements
 
 ---
 
@@ -207,3 +207,116 @@ Status: Completed and verified.
 
 ### Next task
 - Phase 7: Database Backup and Restore
+
+---
+
+## Phase 7: Database Backup and Restore
+Status: Completed and verified.
+
+### Changes made
+- Added a Database Management page and navigation link with download and restore controls.
+- Added a downloadable, timestamped SQLite snapshot generated through `Connection.backup`.
+- Added POST-only database restore with file-size and extension checks, SQLite integrity validation, and required application table/column validation.
+- Added a persistent, timestamped safety backup before replacement and same-directory staging with atomic replacement.
+- Added rollback from the safety backup if the replacement cannot be reopened, and explicit handling for missing, invalid, incompatible, empty, and oversized uploads.
+- Kept uploaded filenames out of filesystem destination paths and added no dependencies or database schema changes.
+
+### Files modified
+- app.py
+- templates/base.html
+- templates/database_management.html
+- static/style.css
+- PROJECT_STATUS.md
+
+### Database location and changes
+- The configured database path is `daily_work_log.db` beside `database.py`, from `database.DATABASE_PATH`.
+- No schema or activity-record changes were made by the backup feature.
+- All restore tests used temporary SQLite databases; no destructive test was run against the application database.
+
+### Tests performed
+- Python syntax check with `python -m py_compile app.py`
+- `git diff --check`
+- Temporary-database integration tests verified backup SQLite integrity, expected schema and records, and unchanged source database bytes.
+- Verified valid restore, persistent pre-restore safety backup, and successful database reconnection.
+- Verified invalid SQLite, missing table, missing required columns, empty upload, disallowed extension, oversized upload, and GET restore rejection.
+- Simulated staging failure and post-replacement reconnection failure; the existing database remained/restored intact.
+- Regression-tested Dashboard, Add Activity, Edit Activity, Delete Activity, Work History search/pagination, and reports via Flask test client.
+- Browser verified the management page, navigation link, controls, and responsive layout at desktop and mobile widths.
+
+### Remaining issues
+- The application has no CSRF protection in its existing setup; no dependency or new CSRF mechanism was introduced for this phase.
+
+### Next task
+- Phase 8: Final Testing and Portfolio Preparation
+
+---
+
+## Phase 8: Final Testing and Portfolio Preparation
+Status: Completed and verified.
+
+### Final application
+- Preserved the dashboard, activity CRUD, Work History, weekly/monthly reports and filters, interactive calendar, charts, CSV/PDF exports, and database backup/restore.
+- Added session-bound CSRF validation for POST requests and tokens to add, edit, delete, and restore forms.
+- Replaced the hard-coded Flask signing key with a stable ignored local key file or a validated `FLASK_SECRET_KEY` environment value.
+- Restricted database management routes to loopback clients and configured the built-in server to bind to `127.0.0.1` with debug mode disabled.
+- Removed debug output that printed recent activity titles and notes.
+- Fixed confirmed tablet-width overflow on reports by allowing the main flex content to shrink.
+
+### Files modified or created
+- app.py
+- .gitignore
+- README.md
+- SECURITY-REVIEW.md
+- templates/base.html
+- templates/add_activity.html
+- templates/edit_activity.html
+- templates/work_history.html
+- templates/database_management.html
+- static/style.css
+- PROJECT_STATUS.md
+
+### Security review and remediation
+- Security review identified missing CSRF protection and the risk of unauthenticated remote database restores.
+- POST requests now require a session-bound CSRF token.
+- Database management is restricted to loopback; the app remains a single-user local application and has no account authentication.
+- Local signing key, SQLite databases, and backup files are excluded from Git.
+- The findings summary was committed separately as `b02082c` (`docs: record database restore security review`).
+
+### Tests performed
+- `python -m py_compile app.py`
+- `node --check static/dashboard.js`
+- `node --check static/reports.js`
+- `git diff --check`
+- Python AST inspection found no unused imports in `app.py` or `database.py`.
+- Isolated temporary-database tests covered dashboard statistics, add/edit/delete with CSRF, invalid activity input, history search/date filtering/pagination, weekly/monthly filters and empty states, CSV/PDF exports, and backup/restore.
+- Verified backup SQLite integrity, schema and records, and byte-for-byte unchanged source database.
+- Verified safety backup creation, restore reconnection, rejection of missing/invalid/incompatible/empty/oversized uploads, GET restore rejection, and preservation/recovery of the original database on simulated failures.
+- Verified missing CSRF tokens are rejected and non-loopback database-management requests receive HTTP 403.
+- Browser checked dashboard, Work History, add/edit forms, reports, and Database Management at desktop, tablet, and mobile widths. Charts initialized, calendar interactions worked, and the tablet report overflow was resolved.
+- Destructive tests used temporary databases; the user's database and personal records were not used for restore tests.
+
+### Documentation and dependencies
+- Replaced the placeholder README with project overview, features, stack, structure, Windows setup, dependency installation, database initialization, run instructions, backup/restore guidance, screenshot placeholders, and limitations.
+- Confirmed `requirements.txt` lists Flask 3.1.3 and ReportLab 4.2.5. Chart.js is loaded from a CDN and needs no Python package.
+
+### Remaining limitations
+- The application has no user accounts or authentication. Keep it local; do not expose it to a network without adding access control.
+- Charts require internet access while Chart.js is loaded from jsDelivr.
+- No automated test suite is included; the verification above used isolated test scripts and browser checks.
+- Phase 3 print-friendly reports remains skipped as previously directed.
+
+### Run the application
+From PowerShell in the project folder:
+
+```powershell
+py -3.15 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python database.py
+python app.py
+```
+
+Open `http://127.0.0.1:5000`.
+
+### Next task
+- Planned development phases complete. No additional feature phase was started.

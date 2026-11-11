@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="welcome">
+    <p class="eyebrow">WORKSPACE / DATABASE</p>
+    <h2>Database Management</h2>
+    <p>Download a backup of your work log or restore data from a previous SQLite backup.</p>
+</section>
+
+<section class="content-card database-management-card">
+    <div class="section-heading">
+        <div>
+            <h2>Download a backup</h2>
+            <p>Create a consistent snapshot of your current activities and database structure.</p>
+        </div>
+    </div>
+
+    <a class="primary-button database-backup-button" href="{{ url_for('download_database_backup') }}">
+        Download Database Backup
+    </a>
+</section>
+
+<section class="content-card database-management-card">
+    <div class="section-heading">
+        <div>
+            <h2>Restore a backup</h2>
+            <p>The selected file must be a valid, compatible SQLite backup. A safety backup of current data is created first.</p>
+        </div>
+    </div>
+
+    <div class="database-restore-warning" role="note">
+        Restoring replaces the current application data with the contents of the selected backup.
+        This action cannot be undone except by restoring another backup.
+    </div>
+
+    <form method="post"
+          action="{{ url_for('restore_database_backup') }}"
+          enctype="multipart/form-data"
+          class="database-restore-form"
+          onsubmit="return confirm('Restoring this backup will replace all current application data. A safety backup will be created first. Continue?');">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label for="backup_file">SQLite backup file</label>
+        <input type="file"
+               id="backup_file"
+               name="backup_file"
+               accept=".sqlite,.sqlite3,.db"
+               required>
+        <button type="submit" class="primary-button database-restore-button">
+            Restore Database
+        </button>
+        <p>Maximum upload size: 64 MB.</p>
+    </form>
+</section>
+
+{% endblock %}

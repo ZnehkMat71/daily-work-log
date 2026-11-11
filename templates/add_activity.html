@@ -20,6 +20,7 @@
     <form method="POST"
           action="{{ url_for('add_activity') }}"
           class="activity-form">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
         <div class="form-grid">
             <div class="form-field">

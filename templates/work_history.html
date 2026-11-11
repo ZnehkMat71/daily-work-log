@@ -149,6 +149,7 @@
                                         class="delete-activity-form"
                                         data-confirm="Permanently delete &quot;{{ activity['title'] }}&quot;? This action cannot be undone."
                                         onsubmit="return confirm(this.dataset.confirm);">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                                         <button
                                             type="submit"
