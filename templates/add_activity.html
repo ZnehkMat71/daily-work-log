@@ -27,6 +27,7 @@
                 <input type="text"
                        id="title"
                        name="title"
+                       value="{{ form_data.title if form_data else '' }}"
                        maxlength="200"
                        required
                        placeholder="e.g. Check computer equipment">
@@ -37,7 +38,7 @@
                 <input type="date"
                        id="activity_date"
                        name="activity_date"
-                       value="{{ today }}"
+                       value="{{ form_data.activity_date if form_data else today }}"
                        max="{{ today }}"
                        required>
             </div>
@@ -46,24 +47,27 @@
                 <label for="activity_time">Time (optional)</label>
                 <input type="time"
                        id="activity_time"
-                       name="activity_time">
+                       name="activity_time"
+                       value="{{ form_data.activity_time if form_data else '' }}">
             </div>
 
             <div class="form-field">
                 <label for="priority">Priority</label>
                 <select id="priority" name="priority">
-                    <option>Low</option>
-                    <option selected>Medium</option>
-                    <option>High</option>
+                    {% set selected_priority = form_data.priority if form_data else 'Medium' %}
+                    <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+                    <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
                 </select>
             </div>
 
             <div class="form-field">
                 <label for="status">Status</label>
                 <select id="status" name="status">
-                    <option selected>Pending</option>
-                    <option>In Progress</option>
-                    <option>Completed</option>
+                    {% set selected_status = form_data.status if form_data else 'Pending' %}
+                    <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Completed</option>
                 </select>
             </div>
 
@@ -72,7 +76,7 @@
                 <textarea id="notes"
                           name="notes"
                           rows="4"
-                          placeholder="Describe what you worked on..."></textarea>
+                          placeholder="Describe what you worked on...">{{ form_data.notes if form_data else '' }}</textarea>
             </div>
         </div>
 

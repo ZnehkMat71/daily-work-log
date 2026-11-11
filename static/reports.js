@@ -1,5 +1,6 @@
 
 document.addEventListener("DOMContentLoaded", function () {
+    initializeCalendarSelection();
 
     // =====================================
     // 1. LOAD REPORT DATA
@@ -26,6 +27,14 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Chart.js library could not be loaded.");
         return;
     }
+
+    reportData.stats = reportData.stats || {};
+    reportData.weekly = reportData.weekly || { labels: [], values: [] };
+    reportData.monthly = reportData.monthly || { labels: [], values: [] };
+    reportData.weekly.labels = reportData.weekly.labels || [];
+    reportData.weekly.values = reportData.weekly.values || [];
+    reportData.monthly.labels = reportData.monthly.labels || [];
+    reportData.monthly.values = reportData.monthly.values || [];
 
 
     // =====================================
@@ -80,7 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Total number.
             ctx.font = "bold 30px Arial";
-            ctx.fillStyle = chartColors.white;
+            ctx.fillStyle = chart.$printing ? "#334155" : chartColors.white;
 
             ctx.fillText(
                 total,
@@ -90,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Center label.
             ctx.font = "11px Arial";
-            ctx.fillStyle = "#94A3B8";
+            ctx.fillStyle = chart.$printing ? "#475569" : "#94A3B8";
 
             ctx.fillText(
                 "TOTAL ACTIVITIES",
@@ -109,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const statusCanvas = document.getElementById("statusChart");
 
-    if (statusCanvas) {
+    if (statusCanvas && !Chart.getChart(statusCanvas)) {
 
         const statusValues = [
             Number(reportData.stats.completed || 0),
@@ -205,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const weeklyCanvas = document.getElementById("weeklyActivityChart");
 
-    if (weeklyCanvas) {
+    if (weeklyCanvas && !Chart.getChart(weeklyCanvas)) {
 
         new Chart(weeklyCanvas, {
 
@@ -288,7 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const monthlyCanvas = document.getElementById("monthlyActivityChart");
 
-    if (monthlyCanvas) {
+    if (monthlyCanvas && !Chart.getChart(monthlyCanvas)) {
 
         new Chart(monthlyCanvas, {
 
@@ -376,4 +385,151 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    const reportCanvases = [
+        statusCanvas,
+        weeklyCanvas,
+        monthlyCanvas
+    ].filter(Boolean);
+
+    window.addEventListener("beforeprint", function () {
+        Chart.defaults.color = "#334155";
+
+        reportCanvases.forEach(function (canvas) {
+            const chart = Chart.getChart(canvas);
+
+            if (!chart) {
+                return;
+            }
+
+            chart.$printing = true;
+
+            if (chart.options.plugins.legend) {
+                chart.options.plugins.legend.labels.color = "#334155";
+            }
+
+            if (chart.options.scales) {
+                Object.values(chart.options.scales).forEach(function (scale) {
+                    scale.ticks.color = "#334155";
+                    if (scale.title) {
+                        scale.title.color = "#334155";
+                    }
+                });
+            }
+
+            chart.resize();
+            chart.update("none");
+        });
+    });
+
+    window.addEventListener("afterprint", function () {
+        Chart.defaults.color = "#94A3B8";
+
+        reportCanvases.forEach(function (canvas) {
+            const chart = Chart.getChart(canvas);
+
+            if (!chart) {
+                return;
+            }
+
+            chart.$printing = false;
+
+            if (chart.options.plugins.legend) {
+                chart.options.plugins.legend.labels.color = "#94A3B8";
+            }
+
+            if (chart.options.scales) {
+                Object.values(chart.options.scales).forEach(function (scale) {
+                    scale.ticks.color = "#94A3B8";
+                    if (scale.title) {
+                        scale.title.color = "#94A3B8";
+                    }
+                });
+            }
+
+            chart.resize();
+            chart.update("none");
+        });
+    });
+
+    document.querySelectorAll("[data-print-report]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            window.print();
+        });
+    });
 });
+
+function initializeCalendarSelection() {
+    const calendarButtons = document.querySelectorAll("[data-calendar-date]");
+    const clearCalendarSelection = document.getElementById("clear-calendar-selection");
+    const activityHeading = document.getElementById("monthly-activity-heading");
+    const activityTable = document.getElementById("monthly-activity-table");
+    const emptyActivities = document.getElementById("monthly-activity-empty");
+    const activityRows = activityTable
+        ? Array.from(activityTable.querySelectorAll("[data-activity-date]"))
+        : [];
+    const defaultActivityHeading = activityHeading
+        ? activityHeading.textContent
+        : "";
+
+    function selectCalendarDate(selectedDate) {
+        let visibleRows = 0;
+
+        calendarButtons.forEach(function (button) {
+            const isSelected = button.dataset.calendarDate === selectedDate;
+            button.setAttribute("aria-pressed", String(isSelected));
+        });
+
+        activityRows.forEach(function (row) {
+            const isVisible = !selectedDate
+                || row.dataset.activityDate === selectedDate;
+            row.hidden = !isVisible;
+            if (isVisible) {
+                visibleRows += 1;
+            }
+        });
+
+        if (activityTable) {
+            activityTable.hidden = visibleRows === 0;
+        }
+
+        if (emptyActivities) {
+            emptyActivities.hidden = visibleRows > 0;
+            if (selectedDate) {
+                emptyActivities.querySelector("h3").textContent =
+                    "No matching activities on this date.";
+                emptyActivities.querySelector("p").textContent =
+                    `No activities match the selected date and filters (${selectedDate}).`;
+            } else {
+                emptyActivities.querySelector("h3").textContent =
+                    "No matching activities for this month.";
+                emptyActivities.querySelector("p").textContent =
+                    "Try changing or clearing the report filters.";
+            }
+        }
+
+        if (activityHeading) {
+            activityHeading.textContent = selectedDate
+                ? `${visibleRows} matching ${visibleRows === 1 ? "activity" : "activities"} on ${selectedDate}.`
+                : defaultActivityHeading;
+        }
+
+        if (clearCalendarSelection) {
+            clearCalendarSelection.hidden = !selectedDate;
+        }
+    }
+
+    calendarButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const selectedDate = button.getAttribute("aria-pressed") === "true"
+                ? ""
+                : button.dataset.calendarDate;
+            selectCalendarDate(selectedDate);
+        });
+    });
+
+    if (clearCalendarSelection) {
+        clearCalendarSelection.addEventListener("click", function () {
+            selectCalendarDate("");
+        });
+    }
+}

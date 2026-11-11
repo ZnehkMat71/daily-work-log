@@ -10,6 +10,7 @@
 </section>
 
 <section class="stats-grid">
+    {% set completion_rate = stats.completion_rate or 0 %}
     <article class="stat-card">
         <p>Total Tasks</p>
         <h3>{{ stats.total or 0 }}</h3>
@@ -19,7 +20,15 @@
     <article class="stat-card">
         <p>Completed</p>
         <h3>{{ stats.completed or 0 }}</h3>
-        <span>Finished tasks</span>
+        <div class="completion-meter"
+             role="progressbar"
+             aria-label="Task completion rate"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             aria-valuenow="{{ completion_rate }}">
+            <span style="width: {{ completion_rate }}%"></span>
+        </div>
+        <span>{{ completion_rate }}% of all activities completed</span>
     </article>
 
     <article class="stat-card">
@@ -41,7 +50,39 @@
     </article>
 </section>
 
-    
+<section class="dashboard-analytics-grid" aria-label="Productivity analytics">
+    <article class="content-card dashboard-chart-card">
+        <div class="section-heading">
+            <div>
+                <h2>Activity This Week</h2>
+                <p>Daily activity counts for the last seven days.</p>
+            </div>
+        </div>
+        <div class="dashboard-chart-wrapper">
+            <canvas id="dashboardWeeklyChart"
+                    role="img"
+                    aria-label="Bar chart showing activity counts for the last seven days">
+                Daily activity counts for the last seven days.
+            </canvas>
+        </div>
+    </article>
+
+    <article class="content-card dashboard-chart-card">
+        <div class="section-heading">
+            <div>
+                <h2>Priority Distribution</h2>
+                <p>Activities grouped by priority.</p>
+            </div>
+        </div>
+        <div class="dashboard-chart-wrapper priority-chart-wrapper">
+            <canvas id="dashboardPriorityChart"
+                    role="img"
+                    aria-label="Doughnut chart showing activity counts by priority">
+                Activity counts by high, medium, and low priority.
+            </canvas>
+        </div>
+    </article>
+</section>
 
 <section class="content-card">
     <div class="section-heading">
@@ -87,7 +128,11 @@
                                     {% endif %}
                             </td>
 
-                            <td>{{ activity['priority'] }}</td>
+                            <td>
+                                <span class="priority-badge priority-{{ activity['priority']|lower }}">
+                                    {{ activity['priority'] }}
+                                </span>
+                            </td>
 
                             <td>
                                 <span class="status-badge">
@@ -112,5 +157,17 @@
         </div>
     {% endif %}
 </section>
+
+<script id="dashboardChartData" type="application/json">
+    {{ {
+        "weekly": {
+            "labels": dashboard_chart_data.daily_activity | map(attribute='label') | list,
+            "values": dashboard_chart_data.daily_activity | map(attribute='total') | list
+        },
+        "priorities": dashboard_chart_data.priorities
+    } | tojson }}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 
 {% endblock %}

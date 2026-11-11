@@ -42,7 +42,7 @@ Status: Complete and validated.
 ---
 
 ## Phase 2: PDF Report Export
-Status: Current task in progress.
+Status: Completed and verified.
 
 ### Changes made
 - Confirmed the existing weekly/monthly report helpers and report page structure before modifying the app.
@@ -71,3 +71,139 @@ Status: Current task in progress.
 
 ### Next task
 - Phase 3: Print-Friendly Reports
+
+---
+
+## Phase 3: Print-Friendly Reports
+Status: Skipped by user; not counted as a completed roadmap phase.
+
+Existing print-related code remains unchanged during Phase 4.
+
+### Next task
+- Phase 4: Activity Editing and Deletion
+
+---
+
+## Phase 4: Activity Editing and Deletion
+Status: Completed and verified.
+
+### Changes made
+- Reused the existing edit and POST-delete routes and added shared server-side validation used by both adding and editing activities.
+- Preserved submitted values in forms after validation errors.
+- Preserved the current Work History search, date filter, and page when opening, saving, or cancelling an edit and after deletion.
+- Improved delete confirmation to identify the activity and clearly state that deletion is permanent.
+- Added safe database error handling and rollback around activity writes.
+- Kept updates limited to activity fields, preserving the existing ID and creation timestamp.
+- Added responsive wrapping for the Edit/Delete row actions.
+
+### Files modified
+- app.py
+- templates/add_activity.html
+- templates/edit_activity.html
+- templates/work_history.html
+- static/style.css
+- PROJECT_STATUS.md
+
+### Database changes
+- None. Tests used a temporary SQLite database; the existing database and records were not modified.
+
+### Tests performed
+- Python syntax check with `python -m py_compile app.py`
+- Flask test-client CRUD and validation tests against an isolated temporary database.
+- Verified edit prepopulation, all editable fields, and preservation of record ID and creation timestamp.
+- Verified empty title, invalid/future date, invalid time, priority, and status are rejected without changing the saved record.
+- Verified add activity success and validation failure.
+- Verified delete confirmation text in the browser, dismissed it, and confirmed the record remained.
+- Verified the delete endpoint rejects GET, handles a missing ID, and deletes through POST.
+- Verified Work History search, date filtering, pagination, and preservation of query state.
+- Verified Dashboard counts and recent activities reflect database changes.
+- Verified Dashboard, Weekly/Monthly Reports, CSV exports, and PDF exports still load.
+- `git diff --check` passed.
+
+### Known issues
+- The project does not currently have CSRF protection; none was present in the existing security setup, and no new dependency was introduced in this phase.
+
+### Next task
+- Phase 6: Report Filters and Calendar Improvements
+
+---
+
+## Phase 5: Dashboard Analytics Improvements
+Status: Completed and verified.
+
+### Changes made
+- Added a completion percentage and progress bar to the existing Completed statistics card, with safe zero-activity handling.
+- Added a seven-day dashboard activity chart with zero-filled calendar dates.
+- Added a priority distribution chart for High, Medium, and Low activities.
+- Improved recent activity priority visibility with colored priority badges.
+- Kept dashboard charts in a dedicated script and separate canvases from the report charts.
+
+### Files modified
+- app.py
+- templates/index.html
+- static/style.css
+- static/dashboard.js
+- PROJECT_STATUS.md
+
+### Database queries
+- Extended the existing `get_stats()` aggregate query with a zero-safe completion-rate calculation.
+- Added grouped activity-date and priority-count queries for dashboard visualizations.
+- No schema changes were made.
+
+### Tests performed
+- Python syntax check with `python -m py_compile app.py`
+- JavaScript syntax check with `node --check static/dashboard.js`
+- Verified completion percentage and zero-activity behavior against an isolated temporary SQLite database.
+- Verified seven recent calendar dates are present and dates without activities show zero.
+- Verified priority distribution counts, including historical records outside the seven-day chart period.
+- Verified analytics refresh after adding, editing, and deleting activities.
+- Verified weekly/monthly reports, CSV exports, and PDF exports still work.
+- Browser verified both dashboard charts render once and the report charts still initialize.
+- Browser checked desktop (1440px), tablet (900px), and mobile (375px) layouts; charts fit and mobile has no horizontal page overflow.
+- `git diff --check` passed.
+
+### Remaining issues
+- None found in Phase 5 validation.
+
+### Next task
+- Phase 6: Report Filters and Calendar Improvements
+
+---
+
+## Phase 6: Report Filters and Calendar Improvements
+Status: Completed and verified.
+
+### Changes made
+- Added server-side status, priority, and case-insensitive title/notes search filters that combine within each selected weekly or monthly period.
+- Updated filtered summaries, daily breakdowns, status distribution, activity tables, and charts to use the same matching records.
+- Preserved filters across weekly/monthly tabs, period navigation, and CSV/PDF export links; added a matching activity count and Clear Filters action.
+- Updated existing CSV and PDF routes to export filtered results without changing filenames or routes.
+- Improved the monthly calendar with filtered activity counts, per-status indicators, accessible date selection, matching activity details, and a clear-selection action.
+- Kept date selection client-side so it does not change the report month; calendar helper data covers the selected month only.
+- Added responsive report filter styling and kept the calendar usable on narrow screens.
+
+### Files modified
+- app.py
+- templates/reports.html
+- static/reports.js
+- static/style.css
+- PROJECT_STATUS.md
+
+### Database changes
+- None. Existing parameterized report queries were extended with parameterized filter clauses; no schema or records were changed.
+
+### Tests performed
+- Python syntax check with `python -m py_compile app.py`
+- JavaScript syntax check with `node --check static/reports.js`
+- `git diff --check`
+- Isolated temporary SQLite integration checks for status, priority, title/notes search, combined filters, empty results, filter-aware totals and daily counts, and week/month boundaries.
+- Verified filtered and unfiltered weekly/monthly CSV and PDF exports return successfully and preserve period filenames.
+- Verified monthly calendar day counts for 31-day, 28-day, and leap-year 29-day months.
+- Flask test-client regressions covered Dashboard, Add Activity, Edit Activity, Delete Activity, Work History search/pagination, and weekly/monthly report pages.
+- Browser verified report charts initialize, filter values and export/navigation links preserve query parameters, calendar date selection shows only that date's matching rows, clear selection restores all rows, and mobile layout remains within the viewport.
+
+### Remaining issues
+- None found in Phase 6 validation.
+
+### Next task
+- Phase 7: Database Backup and Restore
