@@ -72,7 +72,41 @@ Status: Completed and verified.
 - None identified in Stage 2 verification.
 
 ### Next task
-- UI/UX Redesign — Stage 3 (not started)
+- UI/UX Redesign — Stage 3 (completed below)
+
+---
+
+## UI/UX Redesign — Stage 3: Work History
+Status: Completed and verified.
+
+### Changes made
+- Added a focused Work History introduction with a descriptive subtitle and the existing Add Activity action.
+- Clarified matching/total record counts and page position without changing the route’s existing pagination calculations.
+- Reorganized the existing keyword and date controls, with a conditional Clear Filters action and preserved query behavior.
+- Improved activity rows with semantic date/time, title and note hierarchy, shared priority/status badges, and consistent row actions.
+- Preserved CSRF protection, the native delete confirmation, and search/date/page parameters on pagination, edit, and delete links.
+- Converted rows into labeled activity cards on narrow screens and refined empty states for no records versus no filter matches.
+
+### Files modified
+- templates/work_history.html
+- static/style.css
+- PROJECT_STATUS.md
+
+### Tests performed
+- `python -m py_compile app.py database.py`
+- `node --check static/app.js`, `node --check static/dashboard.js`, and `node --check static/reports.js`
+- `git diff --check`
+- Temporary-database Flask tests for Work History, keyword search, date filtering, two-page pagination and filter retention, edit links, delete redirects, delete CSRF rejection, and both empty states.
+- Regression route checks for Dashboard, Add Activity, and Reports.
+- Browser verified the native delete confirmation appears and dismissing it leaves the activity list intact.
+- Browser checked Work History at 1440px, 1024px, 768px, and 375px; the table uses regular rows on wider layouts and activity cards at tablet/mobile widths, without horizontal page overflow.
+- All destructive tests used isolated temporary SQLite data; the configured application database was not changed.
+
+### Remaining issues
+- None identified in Stage 3 verification.
+
+### Next task
+- UI/UX Redesign — Stage 4 (not started)
 
 ---
 

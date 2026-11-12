@@ -1,267 +1,188 @@
-
 {% extends "base.html" %}
 
 {% block content %}
 
-<section class="welcome">
-    <p class="eyebrow">WORKSPACE / RECORDS</p>
-    <h2>Your work, organized.</h2>
-    <p>Search, filter, and review your recorded activities.</p>
+<section class="work-history-intro">
+    <div>
+        <p class="eyebrow">WORKSPACE / RECORDS</p>
+        <h2>Review your activity</h2>
+        <p>Search and revisit the work you have recorded.</p>
+    </div>
+    <a href="{{ url_for('add_activity') }}" class="primary-button">
+        <span aria-hidden="true">+</span>
+        Add Activity
+    </a>
 </section>
 
-<section class="content-card">
-
-    <div class="section-heading">
+<section class="content-card work-history-card" aria-labelledby="history-heading">
+    <div class="section-heading work-history-heading">
         <div>
-            <h2>Activity History</h2>
-
+            <h2 id="history-heading">Activity History</h2>
             <p>
-                {{ total_count }} matching activity record(s).
-
-                {% if total_count > 0 %}
-                    Page {{ page }} of {{ total_pages }}.
-                {% endif %}
+                <strong>{{ total_count }}</strong>
+                {% if keyword or filter_date %}matching{% else %}total{% endif %}
+                {{ 'activity' if total_count == 1 else 'activities' }}
+                {% if total_pages > 0 %}<span class="work-history-page-count">Page {{ page }} of {{ total_pages }}</span>{% endif %}
             </p>
         </div>
-
-        <a href="{{ url_for('add_activity') }}"
-           class="primary-button">
-            + Add Activity
-        </a>
     </div>
 
-    <!-- Search and date filter -->
     <form method="GET"
           action="{{ url_for('work_history') }}"
-          class="filter-form">
-
+          class="filter-form work-history-filter-form">
         <div class="filter-field">
             <label for="keyword">Search activities</label>
-
             <input type="search"
                    id="keyword"
                    name="keyword"
                    value="{{ keyword }}"
-                   placeholder="Search title or notes...">
+                   placeholder="Search titles and notes"
+                   aria-describedby="history-search-hint">
+            <span id="history-search-hint" class="filter-hint">Search activity titles and notes.</span>
         </div>
 
         <div class="filter-field">
-            <label for="filter_date">Filter by date</label>
-
+            <label for="filter_date">Activity date</label>
             <input type="date"
                    id="filter_date"
                    name="filter_date"
                    value="{{ filter_date }}">
         </div>
 
-        <button type="submit" class="primary-button">
-            Search
-        </button>
-
-        <a href="{{ url_for('work_history') }}"
-           class="clear-button">
-            Clear Filters
-        </a>
-
+        <div class="work-history-filter-actions">
+            <button type="submit" class="primary-button">Search</button>
+            {% if keyword or filter_date %}
+                <a href="{{ url_for('work_history') }}" class="clear-button">Clear filters</a>
+            {% endif %}
+        </div>
     </form>
 
-    <!-- Activity table -->
     {% if activities %}
-
-        <div class="table-wrapper">
-
-            <table>
+        <div class="table-wrapper work-history-table-wrapper">
+            <table class="work-history-table">
                 <thead>
                     <tr>
-                        <th>Date / Time</th>
-                        <th>Activity</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th scope="col">Date / Time</th>
+                        <th scope="col">Activity</th>
+                        <th scope="col">Priority</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
-
                 <tbody>
-
                     {% for activity in activities %}
                         <tr>
-                            <!-- Date and time -->
-                            <td>
-                                {{ activity['activity_date'] }}
-
+                            <td data-label="Date / Time">
+                                <time datetime="{{ activity['activity_date'] }}">{{ activity['activity_date'] }}</time>
                                 {% if activity['activity_time'] %}
-                                    <br>
-                                    <small>
-                                        {{ activity['activity_time'] }}
-                                    </small>
+                                    <small class="work-history-time">{{ activity['activity_time'] }}</small>
                                 {% endif %}
                             </td>
-
-                            <!-- Activity details -->
-                            <td>
-                                <strong>
-                                    {{ activity['title'] }}
-                                </strong>
-
+                            <td data-label="Activity">
+                                <strong class="work-history-title">{{ activity['title'] }}</strong>
                                 {% if activity['notes'] %}
-                                    <p class="activity-notes">
-                                        {{ activity['notes'] | truncate(100, true, '...') }}
-                                    </p>
+                                    <p class="activity-notes">{{ activity['notes'] | truncate(100, true, '...') }}</p>
                                 {% endif %}
                             </td>
-
-                            <!-- Priority -->
-                            <td>
-                                {{ activity['priority'] }}
+                            <td data-label="Priority">
+                                <span class="priority-badge priority-{{ activity['priority']|lower }}">
+                                    {{ activity['priority'] }}
+                                </span>
                             </td>
-
-                            <!-- Status -->
-                            <td>
-                                <span class="status-badge">
+                            <td data-label="Status">
+                                <span class="status-badge status-{{ activity['status']|lower|replace(' ', '-') }}">
                                     {{ activity['status'] }}
                                 </span>
                             </td>
-
-                            <!-- Actions -->
-                            <td>
+                            <td data-label="Actions">
                                 <div class="work-history-actions">
-                                    <a
-                                        href="{{ url_for(
+                                    <a href="{{ url_for(
                                             'edit_activity',
                                             activity_id=activity['id'],
                                             keyword=keyword,
                                             filter_date=filter_date,
                                             page=page
                                         ) }}"
-                                        class="btn-edit">
+                                       class="btn-edit">
                                         Edit
                                     </a>
-
-                                    <form
-                                        method="POST"
-                                        action="{{ url_for(
-                                            'delete_activity',
-                                            activity_id=activity['id'],
-                                            keyword=keyword,
-                                            filter_date=filter_date,
-                                            page=page
-                                        ) }}"
-                                        class="delete-activity-form"
-                                        data-confirm="Permanently delete &quot;{{ activity['title'] }}&quot;? This action cannot be undone."
-                                        onsubmit="return confirm(this.dataset.confirm);">
+                                    <form method="POST"
+                                          action="{{ url_for(
+                                              'delete_activity',
+                                              activity_id=activity['id'],
+                                              keyword=keyword,
+                                              filter_date=filter_date,
+                                              page=page
+                                          ) }}"
+                                          class="delete-activity-form"
+                                          data-confirm="Permanently delete &quot;{{ activity['title'] }}&quot;? This action cannot be undone."
+                                          onsubmit="return confirm(this.dataset.confirm);">
                                         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
-                                        <button
-                                            type="submit"
-                                            class="btn-delete">
-                                            Delete
-                                        </button>
+                                        <button type="submit" class="btn-delete">Delete</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     {% endfor %}
-
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination -->
         {% if total_pages > 1 %}
-
-            <nav class="pagination"
-                 aria-label="Activity history pages">
-
-                <!-- Previous page -->
+            <nav class="pagination work-history-pagination" aria-label="Activity history pages">
                 {% if page > 1 %}
-
-                    <a
-                        class="pagination-link"
-                        href="{{ url_for(
-                            'work_history',
-                            page=page - 1,
-                            keyword=keyword,
-                            filter_date=filter_date
-                        ) }}">
-
-                        &laquo; Previous
-
+                    <a class="pagination-link"
+                       href="{{ url_for(
+                           'work_history',
+                           page=page - 1,
+                           keyword=keyword,
+                           filter_date=filter_date
+                       ) }}"
+                       rel="prev">
+                        <span aria-hidden="true">&larr;</span> Previous
                     </a>
-
                 {% else %}
-
-                    <span class="pagination-link disabled">
-                        &laquo; Previous
+                    <span class="pagination-link disabled" aria-disabled="true">
+                        <span aria-hidden="true">&larr;</span> Previous
                     </span>
-
                 {% endif %}
 
-                <!-- Current page -->
-                <span class="pagination-info">
-                    Page {{ page }} of {{ total_pages }}
+                <span class="pagination-info" aria-current="page">
+                    Page <strong>{{ page }}</strong> of {{ total_pages }}
                 </span>
 
-                <!-- Next page -->
                 {% if page < total_pages %}
-
-                    <a
-                        class="pagination-link"
-                        href="{{ url_for(
-                            'work_history',
-                            page=page + 1,
-                            keyword=keyword,
-                            filter_date=filter_date
-                        ) }}">
-
-                        Next &raquo;
-
+                    <a class="pagination-link"
+                       href="{{ url_for(
+                           'work_history',
+                           page=page + 1,
+                           keyword=keyword,
+                           filter_date=filter_date
+                       ) }}"
+                       rel="next">
+                        Next <span aria-hidden="true">&rarr;</span>
                     </a>
-
                 {% else %}
-
-                    <span class="pagination-link disabled">
-                        Next &raquo;
+                    <span class="pagination-link disabled" aria-disabled="true">
+                        Next <span aria-hidden="true">&rarr;</span>
                     </span>
-
                 {% endif %}
-
             </nav>
-
         {% endif %}
-
     {% else %}
-
-        <!-- Empty state -->
-        <div class="empty-state">
-
-            <div class="empty-icon">✓</div>
-
-            <h3>No activities found</h3>
-
-            <p>
-                {% if keyword or filter_date %}
-                    Try changing your search or clearing the filters.
-                {% else %}
-                    Record your first activity to start building your history.
-                {% endif %}
-            </p>
-
-            {% if not keyword and not filter_date %}
-
-                <a
-                    href="{{ url_for('add_activity') }}"
-                    class="primary-button">
-
-                    Add Your First Activity
-
-                </a>
-
+        <div class="empty-state work-history-empty-state">
+            <div class="empty-icon" aria-hidden="true">{% if keyword or filter_date %}?{% else %}+{% endif %}</div>
+            {% if keyword or filter_date %}
+                <h3>No matching activities</h3>
+                <p>There are no activities for the selected search and date. Clear the filters to see all records.</p>
+                <a href="{{ url_for('work_history') }}" class="clear-button">Clear filters</a>
+            {% else %}
+                <h3>No activities recorded yet</h3>
+                <p>Add your first activity to start building your work history.</p>
+                <a href="{{ url_for('add_activity') }}" class="primary-button">Add your first activity</a>
             {% endif %}
-
         </div>
-
     {% endif %}
-
 </section>
 
 {% endblock %}
