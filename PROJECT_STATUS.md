@@ -183,7 +183,53 @@ Status: Completed and verified.
 - Backup history and last-backup details are not tracked by the existing application; this limitation is stated on the page.
 
 ### Next task
-- UI/UX Redesign — Stage 6 (not started)
+- UI/UX Redesign — Stage 6 (completed below)
+
+---
+
+## UI/UX Redesign — Stage 6: Final Application Review
+Status: Completed and verified on `test/updates`. No critical tests remain incomplete.
+
+### Review and fixes
+- Reviewed Flask routes, SQLite helpers, templates, shared styles/scripts, report exports, database management, and existing security protections.
+- Fixed noncanonical date/time acceptance by requiring round-tripping ISO dates and `HH:MM` times; malformed Work History date filters are ignored.
+- Limited Dashboard recent-activity retrieval in SQL to the five rows displayed, rather than loading every activity before slicing.
+- Fixed CSV formula injection by prefixing formula-leading exported text cells; applied this to every exported report field.
+- Added server-side exception logging for PDF generation while retaining the generic client-facing error.
+- Removed superseded duplicate database-management CSS and bumped the shared stylesheet cache version.
+- Added isolated automated regression tests for canonical activity validation and CSV cell neutralization.
+- Preserved routes, schema, existing activity data, CSRF, loopback-only database management, parameterized queries, restore validation, safety backup, atomic replacement, and rollback.
+
+### Files modified
+- `app.py`
+- `static/style.css`
+- `templates/base.html`
+- `tests/test_activity_validation.py`
+- `PROJECT_STATUS.md`
+
+### Tests performed
+- `python -m unittest discover -s tests -v` — 8 tests passed.
+- `python -m py_compile app.py database.py`
+- `node --check static/app.js`, `node --check static/dashboard.js`, and `node --check static/reports.js`
+- `git diff --check`
+- Isolated Flask regression checks covered empty/populated dashboards, add/edit/delete, validation, CSRF, refreshed statistics, Work History search/date filters/pagination, weekly/monthly report filters, CSV/PDF exports, empty states, SQL injection and XSS probes, and CSV formula-leading values.
+- Isolated backup/restore checks covered valid downloadable SQLite backup contents, loopback restrictions, CSRF, traversal/unsupported/corrupt upload rejection without data changes, valid restore, database integrity, and pre-restore safety backup contents.
+- Browser checked Dashboard, Add Activity, Edit Activity, Work History, weekly/monthly Reports, and Database Management at 1440px, 1024px, 768px, and 375px. No horizontal overflow or browser console/page errors were observed.
+- Browser verified dashboard charts, the Sunday-first calendar, four/five/six-row months, February 2028 leap day, modal details and empty state, close/Escape/outside-click behavior, focus return, report-filter effects, print hiding, and mobile navigation focus/background locking.
+- The configured `daily_work_log.db` was inspected read-only: integrity `ok`, 6 activities, SHA-256 `0ce0978724f39262a3c033e83f13e74138ff3da422e8287a8af614c7b593d7df`, and modification time ns `1794216691052717800`; these matched the pre-review baseline.
+- All destructive tests used isolated temporary SQLite databases. No temporary test database or backup file is retained.
+
+### Security review findings
+- Medium severity: user-provided report text could be interpreted as formulas by spreadsheet software when opening CSV exports. Fixed and regression-tested with formula-leading titles and notes.
+- No other verified security issue was found in the reviewed routes and operations.
+
+### Known limitations
+- Backup history and last-backup metadata are not maintained by the application.
+- Charts still rely on Chart.js from jsDelivr and require network access.
+- The application has no user accounts; database-management features remain restricted to loopback clients.
+
+### Final Git status
+- Stage 6 changes are committed separately; the working tree is clean. No push or merge was performed.
 
 ---
 
@@ -516,7 +562,7 @@ Status: Completed and verified.
 ### Remaining limitations
 - The application has no user accounts or authentication. Keep it local; do not expose it to a network without adding access control.
 - Charts require internet access while Chart.js is loaded from jsDelivr.
-- No automated test suite is included; the verification above used isolated test scripts and browser checks.
+- Before Stage 6, verification used isolated scripts and browser checks; Stage 6 adds focused automated tests in `tests/test_activity_validation.py`.
 - Browser printing and Save as PDF depend on the browser's print implementation and user-selected print settings.
 
 ### Run the application

@@ -139,8 +139,8 @@ def restrict_database_management_to_local_clients():
 def is_valid_time(value):
     """Check whether a time uses the HH:MM format."""
     try:
-        datetime.strptime(value, "%H:%M")
-        return True
+        parsed_time = datetime.strptime(value, "%H:%M")
+        return parsed_time.strftime("%H:%M") == value
     except ValueError:
         return False
 
@@ -157,11 +157,11 @@ def validate_activity_form(form):
     }
 
     try:
-        datetime.strptime(activity_data["activity_date"], "%Y-%m-%d")
+        parsed_activity_date = date.fromisoformat(activity_data["activity_date"])
+        valid_date = parsed_activity_date.isoformat() == activity_data["activity_date"]
     except ValueError:
+        parsed_activity_date = None
         valid_date = False
-    else:
-        valid_date = True
 
     if not activity_data["title"]:
         error = "Please enter an activity title."
@@ -169,7 +169,7 @@ def validate_activity_form(form):
         error = "The activity title must be 200 characters or fewer."
     elif not valid_date:
         error = "Please enter a valid activity date."
-    elif activity_data["activity_date"] > date.today().isoformat():
+    elif parsed_activity_date > date.today():
         error = "The activity date cannot be in the future."
     elif activity_data["activity_time"] and not is_valid_time(
         activity_data["activity_time"]
@@ -342,6 +342,14 @@ def get_report_filter_clause(filters):
     return conditions, parameters
 
 
+def _spreadsheet_safe_cell(value):
+    """Prevent spreadsheet applications from evaluating exported text as formulas."""
+
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
 def get_weekly_report(week_offset=0, filters=None):
     """Return activity statistics and records for a selected week."""
 
@@ -454,7 +462,7 @@ def get_weekly_report(week_offset=0, filters=None):
         connection.close()
 
 
-def get_activities(keyword="", filter_date=""):
+def get_activities(keyword="", filter_date="", limit=None):
     """Retrieve activities, optionally searching and filtering by date."""
     connection = get_connection()
 
@@ -477,6 +485,9 @@ def get_activities(keyword="", filter_date=""):
             query += " WHERE " + " AND ".join(conditions)
 
         query += " ORDER BY activity_date DESC, id DESC"
+        if limit is not None:
+            query += " LIMIT ?"
+            parameters.append(max(limit, 0))
 
         return connection.execute(query, parameters).fetchall()
     finally:
@@ -559,10 +570,9 @@ def get_paginated_activities(
 @app.route("/")
 def dashboard():
     """Show the overview and recent activities."""
-    recent_activities = get_activities()[:5]
+    recent_activities = get_activities(limit=5)
     chart_data = get_dashboard_chart_data()
 
-    # Diagnostic messages to help find the display problem.
     return render_template(
         "index.html",
         page_title="Dashboard",
@@ -639,7 +649,9 @@ def work_history():
     # Validate the selected date.
     if filter_date:
         try:
-            datetime.strptime(filter_date, "%Y-%m-%d")
+            parsed_filter_date = date.fromisoformat(filter_date)
+            if parsed_filter_date.isoformat() != filter_date:
+                filter_date = ""
         except ValueError:
             filter_date = ""
 
@@ -1307,12 +1319,24 @@ def export_report():
 
     for activity in report.get("activities", []):
         writer.writerow([
-            activity["activity_date"] if "activity_date" in activity.keys() else "",
-            activity["activity_time"] if "activity_time" in activity.keys() else "",
-            activity["title"] if "title" in activity.keys() else "",
-            activity["notes"] if "notes" in activity.keys() else "",
-            activity["priority"] if "priority" in activity.keys() else "",
-            activity["status"] if "status" in activity.keys() else ""
+            _spreadsheet_safe_cell(
+                activity["activity_date"] if "activity_date" in activity.keys() else ""
+            ),
+            _spreadsheet_safe_cell(
+                activity["activity_time"] if "activity_time" in activity.keys() else ""
+            ),
+            _spreadsheet_safe_cell(
+                activity["title"] if "title" in activity.keys() else ""
+            ),
+            _spreadsheet_safe_cell(
+                activity["notes"] if "notes" in activity.keys() else ""
+            ),
+            _spreadsheet_safe_cell(
+                activity["priority"] if "priority" in activity.keys() else ""
+            ),
+            _spreadsheet_safe_cell(
+                activity["status"] if "status" in activity.keys() else ""
+            )
         ])
 
     csv_data = output.getvalue().encode("utf-8-sig")
@@ -1611,6 +1635,7 @@ def export_report_pdf():
     except ValueError:
         return "Invalid report type.", 400
     except Exception:
+        app.logger.exception("Unable to generate the requested PDF report.")
         return "Unable to generate the PDF report right now.", 500
 
     return Response(
