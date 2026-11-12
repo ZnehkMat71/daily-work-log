@@ -65,16 +65,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================
 
     Chart.defaults.color = "#94A3B8";
-    Chart.defaults.font.family = "Arial, sans-serif";
+    Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, sans-serif';
 
     const gridColor = "rgba(148, 163, 184, 0.12)";
 
     const chartColors = {
-        blue: "#3B82F6",
-        lightBlue: "#60A5FA",
-        yellow: "#F59E0B",
+        blue: "#4D9FFF",
+        lightBlue: "#69ADFF",
+        green: "#34D399",
+        yellow: "#FBBF24",
         gray: "#64748B",
-        white: "#F8FAFC"
+        white: "#F1F5F9"
     };
 
 
@@ -168,13 +169,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     data: statusValues,
 
                     backgroundColor: [
-                        chartColors.blue,
+                        chartColors.green,
                         chartColors.yellow,
                         chartColors.gray
                     ],
 
                     hoverBackgroundColor: [
-                        chartColors.lightBlue,
+                        "#6EE7B7",
                         "#FBBF24",
                         "#94A3B8"
                     ],
@@ -482,96 +483,89 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function initializeCalendarSelection() {
     const calendarButtons = document.querySelectorAll("[data-calendar-date]");
-    const clearCalendarSelection = document.getElementById("clear-calendar-selection");
-    const activityHeading = document.getElementById("monthly-activity-heading");
-    const activityTable = document.getElementById("monthly-activity-table");
-    const emptyActivities = document.getElementById("monthly-activity-empty");
-    const activityRows = activityTable
-        ? Array.from(activityTable.querySelectorAll("[data-activity-date]"))
-        : [];
-    const defaultActivityHeading = activityHeading
-        ? activityHeading.textContent
-        : "";
-    let selectedDateBeforePrint = "";
+    const modal = document.getElementById("calendar-activity-modal");
+    const modalDate = document.getElementById("calendar-modal-date");
+    const modalCount = document.getElementById("calendar-modal-count");
+    const modalActivities = document.getElementById("calendar-modal-activities");
+    const modalEmptyState = document.getElementById("calendar-modal-empty");
+    const closeButton = modal
+        ? modal.querySelector("[data-calendar-modal-close]")
+        : null;
 
-    function selectCalendarDate(selectedDate) {
-        let visibleRows = 0;
+    if (!modal || !modalDate || !modalCount || !modalActivities || !modalEmptyState) {
+        return;
+    }
 
-        calendarButtons.forEach(function (button) {
-            const isSelected = button.dataset.calendarDate === selectedDate;
-            button.setAttribute("aria-pressed", String(isSelected));
-        });
+    const activityItems = Array.from(
+        modalActivities.querySelectorAll("[data-calendar-activity]")
+    );
+    let activeTrigger = null;
 
-        activityRows.forEach(function (row) {
-            const isVisible = !selectedDate
-                || row.dataset.activityDate === selectedDate;
-            row.hidden = !isVisible;
-            if (isVisible) {
-                visibleRows += 1;
-            }
-        });
-
-        if (activityTable) {
-            activityTable.hidden = visibleRows === 0;
-        }
-
-        if (emptyActivities) {
-            emptyActivities.hidden = visibleRows > 0;
-            if (selectedDate) {
-                emptyActivities.querySelector("h3").textContent =
-                    "No matching activities on this date.";
-                emptyActivities.querySelector("p").textContent =
-                    `No activities match the selected date and filters (${selectedDate}).`;
-            } else {
-                emptyActivities.querySelector("h3").textContent =
-                    "No matching activities for this month.";
-                emptyActivities.querySelector("p").textContent =
-                    "Try changing or clearing the report filters.";
-            }
-        }
-
-        if (activityHeading) {
-            activityHeading.textContent = selectedDate
-                ? `${visibleRows} matching ${visibleRows === 1 ? "activity" : "activities"} on ${selectedDate}.`
-                : defaultActivityHeading;
-        }
-
-        if (clearCalendarSelection) {
-            clearCalendarSelection.hidden = !selectedDate;
+    function closeCalendarModal() {
+        if (modal.open) {
+            modal.close();
         }
     }
 
     calendarButtons.forEach(function (button) {
         button.addEventListener("click", function () {
-            const selectedDate = button.getAttribute("aria-pressed") === "true"
-                ? ""
-                : button.dataset.calendarDate;
-            selectCalendarDate(selectedDate);
+            const selectedDate = button.dataset.calendarDate;
+            const date = new Date(`${selectedDate}T12:00:00`);
+            const matchingActivities = activityItems.filter(function (item) {
+                const isMatch = item.dataset.calendarActivity === selectedDate;
+                item.hidden = !isMatch;
+                return isMatch;
+            });
+
+            calendarButtons.forEach(function (calendarButton) {
+                calendarButton.setAttribute(
+                    "aria-pressed",
+                    String(calendarButton === button)
+                );
+            });
+
+            modalDate.textContent = new Intl.DateTimeFormat(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+            }).format(date);
+            modalCount.textContent =
+                `${matchingActivities.length} matching ${matchingActivities.length === 1 ? "activity" : "activities"}`;
+            modalEmptyState.hidden = matchingActivities.length > 0;
+            activeTrigger = button;
+            modal.showModal();
         });
     });
 
-    if (clearCalendarSelection) {
-        clearCalendarSelection.addEventListener("click", function () {
-            selectCalendarDate("");
-        });
+    if (closeButton) {
+        closeButton.addEventListener("click", closeCalendarModal);
     }
 
-    window.addEventListener("beforeprint", function () {
-        const selectedButton = Array.from(calendarButtons).find(function (button) {
-            return button.getAttribute("aria-pressed") === "true";
-        });
-        selectedDateBeforePrint = selectedButton
-            ? selectedButton.dataset.calendarDate
-            : "";
-        if (selectedDateBeforePrint) {
-            selectCalendarDate("");
+    window.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && modal.open) {
+            event.preventDefault();
+            closeCalendarModal();
         }
     });
 
-    window.addEventListener("afterprint", function () {
-        if (selectedDateBeforePrint) {
-            selectCalendarDate(selectedDateBeforePrint);
-            selectedDateBeforePrint = "";
+    modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            closeCalendarModal();
         }
     });
+
+    modal.addEventListener("close", function () {
+        calendarButtons.forEach(function (button) {
+            button.setAttribute("aria-pressed", "false");
+        });
+
+        if (activeTrigger && activeTrigger.isConnected) {
+            activeTrigger.focus();
+        }
+
+        activeTrigger = null;
+    });
+
+    window.addEventListener("beforeprint", closeCalendarModal);
 }

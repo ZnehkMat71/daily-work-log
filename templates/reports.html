@@ -9,10 +9,10 @@
      WELCOME SECTION
 ===================================== -->
 
-<section class="welcome">
+<section class="welcome reports-intro">
     <p class="eyebrow">WORKSPACE / REPORTS</p>
     <h2>Activity Reports</h2>
-    <p>Review your recorded activities and overall progress.</p>
+    <p>Explore your activity trends and progress by week or month.</p>
 </section>
 
 
@@ -106,12 +106,14 @@
 <div class="report-tabs">
 
     <a href="{{ url_for('reports', tab='weekly', week=week_offset, month=month_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
-       class="report-tab {% if active_tab == 'weekly' %}active{% endif %}">
+       class="report-tab {% if active_tab == 'weekly' %}active{% endif %}"
+       {% if active_tab == 'weekly' %}aria-current="page"{% endif %}>
         Weekly Report
     </a>
 
     <a href="{{ url_for('reports', tab='monthly', week=week_offset, month=month_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
-       class="report-tab {% if active_tab == 'monthly' %}active{% endif %}">
+       class="report-tab {% if active_tab == 'monthly' %}active{% endif %}"
+       {% if active_tab == 'monthly' %}aria-current="page"{% endif %}>
         Monthly Report
     </a>
 
@@ -149,7 +151,7 @@
      Visible on both tabs
 ===================================== -->
 
-<div class="report-chart-container">
+<div class="report-chart-container report-status-chart">
 
     <h3>Task Status Distribution</h3>
 
@@ -173,12 +175,12 @@
 <section class="content-card weekly-report-content">
 
     <!-- Weekly Heading -->
-    <div class="section-heading">
+    <div class="section-heading report-period-heading">
         <div>
 
             <p class="eyebrow">WEEKLY SUMMARY</p>
 
-            <h2>This Week's Activities</h2>
+            <h2>Weekly Activity Summary</h2>
 
             <p>
                 {{ weekly_report.week_start.strftime('%B %d, %Y') }}
@@ -187,7 +189,7 @@
             </p>
 
             <!-- Weekly Navigation -->
-            <div class="week-navigation">
+            <nav class="week-navigation" aria-label="Weekly report navigation">
 
                 <a href="{{ url_for('reports', tab='weekly', week=week_offset - 1, month=month_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
                    class="clear-button">
@@ -204,7 +206,7 @@
                     Next Week &rarr;
                 </a>
 
-            </div>
+            </nav>
 
             <div class="report-actions">
                 <a href="{{ url_for('export_report', type='weekly', week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
@@ -255,7 +257,7 @@
 
     </section>
 
-    <form method="get" action="{{ url_for('reports') }}" class="report-filters">
+    <form method="get" action="{{ url_for('reports') }}" class="report-filters" aria-label="Filter weekly report activities">
         <input type="hidden" name="tab" value="weekly">
         <input type="hidden" name="week" value="{{ week_offset }}">
         <input type="hidden" name="month" value="{{ month_offset }}">
@@ -295,7 +297,7 @@
 
 
     <!-- Weekly Daily Breakdown -->
-    <div class="section-heading" style="margin-top: 30px;">
+    <div class="section-heading report-section-heading">
         <div>
             <h2>Daily Breakdown</h2>
             <p>Matching activities recorded each day this week.</p>
@@ -328,7 +330,7 @@
 
 
     <!-- Weekly Activity Details -->
-    <div class="section-heading" style="margin-top: 35px;">
+    <div class="section-heading report-section-heading">
         <div>
             <h2>Activity Details</h2>
             <p>Activities matching the selected week and filters.</p>
@@ -372,10 +374,14 @@
                             {% endif %}
                         </td>
 
-                        <td>{{ activity['priority'] }}</td>
+                        <td>
+                            <span class="priority-badge priority-{{ activity['priority']|lower }}">
+                                {{ activity['priority'] }}
+                            </span>
+                        </td>
 
                         <td>
-                            <span class="status-badge">
+                            <span class="status-badge report-status-{{ activity['status']|lower|replace(' ', '-') }}">
                                 {{ activity['status'] }}
                             </span>
                         </td>
@@ -390,9 +396,11 @@
 
     {% else %}
 
-        <div class="empty-state">
+        <div class="empty-state report-empty-state">
             <h3>No matching activities this week</h3>
             <p>Try changing or clearing the report filters.</p>
+            <a class="clear-button report-empty-action"
+               href="{{ url_for('reports', tab='weekly', week=week_offset, month=month_offset) }}">Clear filters</a>
         </div>
 
     {% endif %}
@@ -429,7 +437,7 @@
 
             <p class="eyebrow">MONTHLY SUMMARY</p>
 
-            <h2>Monthly Activities</h2>
+            <h2>Monthly Activity Summary</h2>
 
             <p>
                 {{ monthly_report.month_start.strftime('%B %d, %Y') }}
@@ -437,26 +445,7 @@
                 {{ monthly_report.month_end.strftime('%B %d, %Y') }}
             </p>
 
-            <!-- Monthly Navigation -->
-            <div class="week-navigation">
-
-                <a href="{{ url_for('reports', tab='monthly', month=month_offset - 1, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
-                   class="clear-button">
-                    &larr; Previous Month
-                </a>
-
-                <a href="{{ url_for('reports', tab='monthly', month=0, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
-                   class="clear-button">
-                    Current Month
-                </a>
-
-                <a href="{{ url_for('reports', tab='monthly', month=month_offset + 1, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
-                   class="clear-button">
-                    Next Month &rarr;
-                </a>
-
-            </div>
-
+            <!-- Monthly Export Actions -->
             <div class="report-actions">
                 <a href="{{ url_for('export_report', type='monthly', month=month_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
                    class="primary-button">
@@ -506,7 +495,7 @@
 
     </section>
 
-    <form method="get" action="{{ url_for('reports') }}" class="report-filters">
+    <form method="get" action="{{ url_for('reports') }}" class="report-filters" aria-label="Filter monthly report activities">
         <input type="hidden" name="tab" value="monthly">
         <input type="hidden" name="week" value="{{ week_offset }}">
         <input type="hidden" name="month" value="{{ month_offset }}">
@@ -551,21 +540,41 @@
         <div class="section-heading">
             <div>
                 <h2>Monthly Activity Calendar</h2>
-                <p>Select a date to see its matching activities.</p>
+                <p>Select any date to review activities matching the current report filters.</p>
             </div>
         </div>
+
+        <nav class="calendar-month-navigation" aria-label="Monthly report navigation">
+            <a href="{{ url_for('reports', tab='monthly', month=month_offset - 1, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
+               class="clear-button"
+               aria-label="Previous month">
+                &larr; <span>Previous</span>
+            </a>
+            <h3>{{ monthly_report.month_start.strftime('%B %Y') }}</h3>
+            <div class="calendar-month-actions">
+                {% if month_offset != 0 %}
+                    <a href="{{ url_for('reports', tab='monthly', month=0, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
+                       class="clear-button">Current month</a>
+                {% endif %}
+                <a href="{{ url_for('reports', tab='monthly', month=month_offset + 1, week=week_offset, status=report_filters.status, priority=report_filters.priority, search=report_filters.search) }}"
+                   class="clear-button"
+                   aria-label="Next month">
+                    <span>Next</span> &rarr;
+                </a>
+            </div>
+        </nav>
 
         <div class="calendar-wrapper">
 
             <!-- Calendar Weekdays -->
-            <div class="calendar-grid calendar-weekdays">
-                <div>Mon</div>
-                <div>Tue</div>
-                <div>Wed</div>
-                <div>Thu</div>
-                <div>Fri</div>
-                <div>Sat</div>
-                <div>Sun</div>
+            <div class="calendar-grid calendar-weekdays" role="row">
+                <div role="columnheader" aria-label="Monday"><span class="calendar-weekday-long" aria-hidden="true">Monday</span><span class="calendar-weekday-short" aria-hidden="true">Mon</span></div>
+                <div role="columnheader" aria-label="Tuesday"><span class="calendar-weekday-long" aria-hidden="true">Tuesday</span><span class="calendar-weekday-short" aria-hidden="true">Tue</span></div>
+                <div role="columnheader" aria-label="Wednesday"><span class="calendar-weekday-long" aria-hidden="true">Wednesday</span><span class="calendar-weekday-short" aria-hidden="true">Wed</span></div>
+                <div role="columnheader" aria-label="Thursday"><span class="calendar-weekday-long" aria-hidden="true">Thursday</span><span class="calendar-weekday-short" aria-hidden="true">Thu</span></div>
+                <div role="columnheader" aria-label="Friday"><span class="calendar-weekday-long" aria-hidden="true">Friday</span><span class="calendar-weekday-short" aria-hidden="true">Fri</span></div>
+                <div role="columnheader" aria-label="Saturday"><span class="calendar-weekday-long" aria-hidden="true">Saturday</span><span class="calendar-weekday-short" aria-hidden="true">Sat</span></div>
+                <div role="columnheader" aria-label="Sunday"><span class="calendar-weekday-long" aria-hidden="true">Sunday</span><span class="calendar-weekday-short" aria-hidden="true">Sun</span></div>
             </div>
 
             <!-- Calendar Dates -->
@@ -584,7 +593,8 @@
                         {% if day.date == today %}today{% endif %}"
                         data-calendar-date="{{ day.date }}"
                         aria-pressed="false"
-                        aria-label="{{ day.date }}: {{ day.total }} matching {{ 'activity' if day.total == 1 else 'activities' }}">
+                        {% if day.date == today %}aria-current="date"{% endif %}
+                        aria-label="{{ day.date }}: {{ day.total }} matching {{ 'activity' if day.total == 1 else 'activities' }}. Select to view details.">
 
                         <span class="calendar-date">
                             {{ day.date[-2:] | int }}
@@ -592,9 +602,9 @@
 
                         {% if day.total > 0 %}
 
-                            <span class="calendar-activity-count">
-                                {{ day.total }}
-                                {{ 'activity' if day.total == 1 else 'activities' }}
+                            <span class="calendar-activity-count"
+                                  aria-label="{{ day.total }} matching {{ 'activity' if day.total == 1 else 'activities' }}">
+                                {{ day.total }}<span class="calendar-activity-label"> {{ 'activity' if day.total == 1 else 'activities' }}</span>
                             </span>
 
                             <span class="calendar-status-indicators" aria-hidden="true">
@@ -604,11 +614,7 @@
                             </span>
 
                         {% else %}
-
-                            <span class="calendar-no-activity">
-                                No activity
-                            </span>
-
+                            <span class="calendar-no-activity">No activity</span>
                         {% endif %}
 
                     </button>
@@ -659,68 +665,104 @@
 
 </section>
 
+<dialog class="calendar-activity-modal"
+        id="calendar-activity-modal"
+        aria-modal="true"
+        aria-labelledby="calendar-modal-title">
+    <div class="calendar-modal-header">
+        <div>
+            <p class="eyebrow">MONTHLY ACTIVITY</p>
+            <h2 id="calendar-modal-title">Activities on <time id="calendar-modal-date"></time></h2>
+            <p id="calendar-modal-count" class="calendar-modal-count" aria-live="polite" aria-atomic="true"></p>
+        </div>
+        <button type="button"
+                class="calendar-modal-close"
+                data-calendar-modal-close
+                aria-label="Close activity details"
+                autofocus>&times;</button>
+    </div>
 
-<!-- Monthly Activity Details -->
-<section class="content-card">
+    <div class="calendar-modal-body">
+        <ol class="calendar-modal-activity-list" id="calendar-modal-activities">
+            {% for activity in monthly_report.activities %}
+                <li data-calendar-activity="{{ activity.activity_date }}">
+                    <div class="calendar-modal-activity-heading">
+                        <h3>{{ activity.title }}</h3>
+                        {% if activity.activity_time %}
+                            <time datetime="{{ activity.activity_date }}T{{ activity.activity_time }}">
+                                {{ activity.activity_time }}
+                            </time>
+                        {% endif %}
+                    </div>
+                    <p class="calendar-modal-notes">
+                        {{ activity.notes or 'No notes provided.' }}
+                    </p>
+                    <div class="calendar-modal-badges">
+                        <span class="priority-badge priority-{{ activity.priority|lower }}">
+                            {{ activity.priority }}
+                        </span>
+                        <span class="status-badge report-status-{{ activity.status|lower|replace(' ', '-') }}">
+                            {{ activity.status }}
+                        </span>
+                    </div>
+                </li>
+            {% endfor %}
+        </ol>
+        <div class="empty-state calendar-modal-empty" id="calendar-modal-empty" hidden>
+            <h3>No matching activities on this date</h3>
+            <p>No activities match this date and the current report filters.</p>
+        </div>
+    </div>
+</dialog>
 
+<section class="content-card monthly-print-details" aria-label="Monthly activity details for printing">
     <div class="section-heading">
         <div>
             <h2>Activity Details</h2>
-            <p id="monthly-activity-heading">Activities matching the selected month and filters.</p>
+            <p>Activities matching {{ monthly_report.month_start.strftime('%B %Y') }} and the current filters.</p>
         </div>
-        <button type="button" class="clear-button" id="clear-calendar-selection" hidden>Clear selected date</button>
     </div>
-
-    <div class="table-wrapper monthly-activity-table" id="monthly-activity-table" {% if not monthly_report.activities %}hidden{% endif %}>
-
+    {% if monthly_report.activities %}
+        <div class="table-wrapper monthly-activity-table">
             <table>
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Time</th>
+                        <th>Date / Time</th>
                         <th>Activity</th>
                         <th>Priority</th>
                         <th>Status</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     {% for activity in monthly_report.activities %}
-                    <tr data-activity-date="{{ activity.activity_date }}">
-
-                        <td>{{ activity.activity_date }}</td>
-
-                        <td>{{ activity.activity_time or '-' }}</td>
-
-                        <td>
-                            <strong>{{ activity.title }}</strong>
-                            <br>
-                            <small>
-                                {{ (activity.notes or 'No notes provided.') | truncate(100) }}
-                            </small>
-                        </td>
-
-                        <td>{{ activity.priority }}</td>
-
-                        <td>
-                            <span class="status-badge">
-                                {{ activity.status }}
-                            </span>
-                        </td>
-
-                    </tr>
+                        <tr>
+                            <td>
+                                <time datetime="{{ activity.activity_date }}">{{ activity.activity_date }}</time>
+                                {% if activity.activity_time %}<small>{{ activity.activity_time }}</small>{% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ activity.title }}</strong>
+                                <p class="activity-notes">{{ activity.notes or 'No notes provided.' }}</p>
+                            </td>
+                            <td>
+                                <span class="priority-badge priority-{{ activity.priority|lower }}">{{ activity.priority }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge report-status-{{ activity.status|lower|replace(' ', '-') }}">{{ activity.status }}</span>
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
-
             </table>
-
         </div>
-
-    <div class="empty-state" id="monthly-activity-empty" {% if monthly_report.activities %}hidden{% endif %}>
-        <h3>No matching activities for this month.</h3>
-        <p>Try changing or clearing the report filters.</p>
-    </div>
-
+    {% else %}
+        <div class="empty-state report-empty-state">
+            <h3>No matching activities for this month</h3>
+            <p>Try changing or clearing the report filters.</p>
+            <a class="clear-button report-empty-action"
+               href="{{ url_for('reports', tab='monthly', week=week_offset, month=month_offset) }}">Clear filters</a>
+        </div>
+    {% endif %}
 </section>
 
 
@@ -766,7 +808,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
 <!-- External Report JavaScript -->
-<script src="{{ url_for('static', filename='reports.js') }}"></script>
+<script src="{{ url_for('static', filename='reports.js', v='reports-redesign-5') }}"></script>
 
 </div>
 
