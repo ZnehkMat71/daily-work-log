@@ -116,7 +116,7 @@ Status: Completed and verified.
 ### Changes made
 - Refined report headings, report tabs, period controls, summary cards, filter toolbars, charts, activity tables, and empty states using the existing design tokens and components.
 - Added accessible previous/current/next month controls to the monthly calendar while preserving status, priority, keyword, and period query parameters.
-- Kept the Monday-first seven-column calendar, with tested date alignment, activity counts/status indicators, current-day styling, and responsive compact weekday labels.
+- Uses a Sunday-first, Saturday-last seven-column calendar, with tested date alignment, activity counts/status indicators, current-day styling, and responsive compact weekday labels.
 - Replaced the inline monthly date selection with a native centered modal. It shows the filter-matched activities for a selected date, including titles, available times, full notes, priorities, and statuses.
 - Added modal close-button, backdrop, Escape, focus-return, background-inertness, no-results, and scrollable-long-list behavior without adding backend logic or changing the database schema.
 - Preserved monthly print details in a print-only table and hid the modal/backdrop in print output. CSV/PDF exports and report calculations remain on the existing routes/helpers.
@@ -134,7 +134,7 @@ Status: Completed and verified.
 - `node --check static/app.js`, `node --check static/dashboard.js`, and `node --check static/reports.js`
 - `git diff --check`
 - Isolated-database Flask tests for weekly/monthly date ranges, filtered statistics and activities, report period navigation, monthly calendar/modal markup, empty states, CSV/PDF export filters, and unchanged schema/record count.
-- Verified Monday-first calendar offsets and exact day counts for February 2026, October–December 2026, January 2027, and leap-year February 2028.
+- Verified Sunday-first calendar offsets and exact day counts for months beginning on different weekdays, months requiring four, five, and six rows, and leap-year February.
 - Browser verified activity modal details/counts, scrolling for 12 records, empty-date state, close button, Escape, backdrop close, focus return, and filtered results.
 - Browser checked weekly and monthly layouts at 1440px, 1024px, 768px, and 375px without page-level horizontal overflow; Chart.js charts initialized at each size and no JavaScript console/page errors were observed.
 - Browser print-media check confirmed the modal, sidebar, tabs, and filters are hidden, monthly print details are shown, and the page background is white.

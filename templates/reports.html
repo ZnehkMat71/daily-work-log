@@ -568,20 +568,22 @@
 
             <!-- Calendar Weekdays -->
             <div class="calendar-grid calendar-weekdays" role="row">
+                <div role="columnheader" aria-label="Sunday"><span class="calendar-weekday-long" aria-hidden="true">Sunday</span><span class="calendar-weekday-short" aria-hidden="true">Sun</span></div>
                 <div role="columnheader" aria-label="Monday"><span class="calendar-weekday-long" aria-hidden="true">Monday</span><span class="calendar-weekday-short" aria-hidden="true">Mon</span></div>
                 <div role="columnheader" aria-label="Tuesday"><span class="calendar-weekday-long" aria-hidden="true">Tuesday</span><span class="calendar-weekday-short" aria-hidden="true">Tue</span></div>
                 <div role="columnheader" aria-label="Wednesday"><span class="calendar-weekday-long" aria-hidden="true">Wednesday</span><span class="calendar-weekday-short" aria-hidden="true">Wed</span></div>
                 <div role="columnheader" aria-label="Thursday"><span class="calendar-weekday-long" aria-hidden="true">Thursday</span><span class="calendar-weekday-short" aria-hidden="true">Thu</span></div>
                 <div role="columnheader" aria-label="Friday"><span class="calendar-weekday-long" aria-hidden="true">Friday</span><span class="calendar-weekday-short" aria-hidden="true">Fri</span></div>
                 <div role="columnheader" aria-label="Saturday"><span class="calendar-weekday-long" aria-hidden="true">Saturday</span><span class="calendar-weekday-short" aria-hidden="true">Sat</span></div>
-                <div role="columnheader" aria-label="Sunday"><span class="calendar-weekday-long" aria-hidden="true">Sunday</span><span class="calendar-weekday-short" aria-hidden="true">Sun</span></div>
             </div>
 
             <!-- Calendar Dates -->
             <div class="calendar-grid calendar-days">
 
+                {% set calendar_start_offset = (monthly_report.month_start.weekday() + 1) % 7 %}
+
                 <!-- Empty spaces before first day -->
-                {% for blank in range(monthly_report.month_start.weekday()) %}
+                {% for blank in range(calendar_start_offset) %}
                     <div class="calendar-day empty-day"></div>
                 {% endfor %}
 
@@ -622,7 +624,7 @@
                 {% endfor %}
 
                 <!-- Empty spaces after last day -->
-                {% for blank in range((7 - ((monthly_report.month_start.weekday() + monthly_report.month_end.day) % 7)) % 7) %}
+                {% for blank in range((7 - ((calendar_start_offset + monthly_report.month_end.day) % 7)) % 7) %}
                     <div class="calendar-day empty-day"></div>
                 {% endfor %}
 
