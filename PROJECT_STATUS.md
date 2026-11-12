@@ -144,7 +144,46 @@ Status: Completed and verified.
 - None identified in Stage 4 verification.
 
 ### Next task
-- UI/UX Redesign — Stage 5 (not started)
+- UI/UX Redesign — Stage 5 (completed below)
+
+---
+
+## UI/UX Redesign — Stage 5: Database Management
+Status: Completed and verified.
+
+### Changes made
+- Redesigned the database page with the shared dark design tokens, a concise overview, clear backup action, and a visually distinct destructive restore section.
+- Added safe database status, filename, file size, and last-modified information. The full filesystem path is not displayed; missing/error values are reported without inventing backup metadata.
+- Clarified that backup downloads are temporary and no backup history or last-backup record is maintained.
+- Improved restore feedback with a selected-filename preview, filename-specific confirmation, and submit-button protection against duplicate restores. Canceling confirmation leaves the action available.
+- Added a narrow restore-upload filename guard for path separators, drive-colon paths, and parent-directory prefixes. Uploads continue to use generated temporary files and the existing SQLite/schema validation, safety backup, atomic replacement, and rollback behavior.
+- Preserved existing routes, backup naming/storage behavior, CSRF checks, loopback-only restrictions, upload limits, and database connection logic. No schema changes were made.
+- Updated shared stylesheet/script cache versions for the new page styles and behavior.
+
+### Files modified
+- app.py
+- templates/database_management.html
+- static/style.css
+- static/app.js
+- templates/base.html
+- PROJECT_STATUS.md
+
+### Tests performed
+- `python -m py_compile app.py database.py`
+- `node --check static/app.js`, `node --check static/dashboard.js`, and `node --check static/reports.js`
+- `git diff --check`
+- Isolated SQLite tests verified overview filename/size/time and safe path handling, valid backup contents and unchanged source rows, missing-database messaging, and backup failure feedback.
+- Isolated restore tests verified CSRF enforcement, loopback-only access, rejection of unsupported, corrupt, incompatible, and path-shaped filenames, successful valid restore, and creation of a pre-restore safety backup.
+- Injected a post-replacement failure against isolated data and verified automatic rollback restored the original records.
+- Browser verified selected filename confirmation, cancellation without disabling the restore control, successful restore feedback, and layouts at 1440px, 1024px, 768px, and 375px without horizontal overflow or JavaScript console errors.
+- Dashboard, Add Activity, Work History, weekly/monthly Reports, and CSV/PDF export routes passed smoke tests against an isolated database.
+- The configured database passed a read-only integrity/count check and its file modification time remained unchanged. All temporary Stage 5 databases and backup files were removed.
+
+### Remaining issues
+- Backup history and last-backup details are not tracked by the existing application; this limitation is stated on the page.
+
+### Next task
+- UI/UX Redesign — Stage 6 (not started)
 
 ---
 

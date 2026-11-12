@@ -2,55 +2,124 @@
 
 {% block content %}
 
-<section class="welcome">
-    <p class="eyebrow">WORKSPACE / DATABASE</p>
-    <h2>Database Management</h2>
-    <p>Download a backup of your work log or restore data from a previous SQLite backup.</p>
-</section>
+<div class="database-management-page" data-database-management>
+    <section class="welcome database-page-intro">
+        <p class="eyebrow">WORKSPACE / DATABASE</p>
+        <h2>Database Management</h2>
+        <p>Review local database availability and manage safe downloads and restores.</p>
+    </section>
 
-<section class="content-card database-management-card">
-    <div class="section-heading">
-        <div>
-            <h2>Download a backup</h2>
-            <p>Create a consistent snapshot of your current activities and database structure.</p>
+    <section class="content-card database-management-card database-overview-card"
+             aria-labelledby="database-overview-heading">
+        <div class="section-heading">
+            <div>
+                <h2 id="database-overview-heading">Database overview</h2>
+                <p>Local file details. The full filesystem path is not displayed.</p>
+            </div>
+            {% if database_info.status == "available" %}
+                <span class="database-status database-status-available">
+                    <span aria-hidden="true"></span> Available
+                </span>
+            {% elif database_info.status == "error" %}
+                <span class="database-status database-status-error">
+                    <span aria-hidden="true"></span> Information unavailable
+                </span>
+            {% else %}
+                <span class="database-status database-status-unavailable">
+                    <span aria-hidden="true"></span> Not available
+                </span>
+            {% endif %}
         </div>
-    </div>
 
-    <a class="primary-button database-backup-button" href="{{ url_for('download_database_backup') }}">
-        Download Database Backup
-    </a>
-</section>
+        <dl class="database-overview-list">
+            <div>
+                <dt>Database file</dt>
+                <dd>{{ database_info.name }}</dd>
+            </div>
+            <div>
+                <dt>File size</dt>
+                <dd>{{ database_info.size or "Unavailable" }}</dd>
+            </div>
+            <div>
+                <dt>Last modified</dt>
+                <dd>{{ database_info.modified or "Unavailable" }}</dd>
+            </div>
+        </dl>
+    </section>
 
-<section class="content-card database-management-card">
-    <div class="section-heading">
-        <div>
-            <h2>Restore a backup</h2>
-            <p>The selected file must be a valid, compatible SQLite backup. A safety backup of current data is created first.</p>
+    <section class="content-card database-management-card database-backup-card"
+             aria-labelledby="database-backup-heading">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">BACKUP</p>
+                <h2 id="database-backup-heading">Download a backup</h2>
+                <p>Create a consistent snapshot of the current activities and database structure.</p>
+            </div>
         </div>
-    </div>
 
-    <div class="database-restore-warning" role="note">
-        Restoring replaces the current application data with the contents of the selected backup.
-        This action cannot be undone except by restoring another backup.
-    </div>
+        {% if database_info.status == "available" %}
+            <a class="primary-button database-backup-button"
+               href="{{ url_for('download_database_backup') }}"
+               data-database-backup>
+                Download database backup
+            </a>
+            <p class="database-backup-feedback"
+               data-database-backup-feedback
+               role="status"
+               aria-live="polite"></p>
+        {% else %}
+            <p class="database-unavailable-message" role="status">
+                A backup cannot be created while the application database is unavailable.
+            </p>
+        {% endif %}
 
-    <form method="post"
-          action="{{ url_for('restore_database_backup') }}"
-          enctype="multipart/form-data"
-          class="database-restore-form"
-          onsubmit="return confirm('Restoring this backup will replace all current application data. A safety backup will be created first. Continue?');">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <label for="backup_file">SQLite backup file</label>
-        <input type="file"
-               id="backup_file"
-               name="backup_file"
-               accept=".sqlite,.sqlite3,.db"
-               required>
-        <button type="submit" class="primary-button database-restore-button">
-            Restore Database
-        </button>
-        <p>Maximum upload size: 64 MB.</p>
-    </form>
-</section>
+        <p class="database-history-note">
+            Backup downloads are temporary snapshots. Backup history and last-backup details are not stored.
+        </p>
+    </section>
+
+    <section class="content-card database-management-card database-restore-card"
+             aria-labelledby="database-restore-heading">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">DESTRUCTIVE ACTION</p>
+                <h2 id="database-restore-heading">Restore a backup</h2>
+                <p>The selected file must be a valid, compatible SQLite backup. A safety backup of current data is created first.</p>
+            </div>
+        </div>
+
+        <div class="database-restore-warning" role="note">
+            <strong>Restoring replaces the current application data.</strong>
+            This cannot be undone except by restoring another backup. The application creates a safety backup before replacement.
+        </div>
+
+        <form method="post"
+              action="{{ url_for('restore_database_backup') }}"
+              enctype="multipart/form-data"
+              class="database-restore-form"
+              data-database-restore
+              onsubmit="return confirm('Restore ' + this.elements.backup_file.files[0].name + ' and replace all current data? A safety backup will be created first.');">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div class="database-restore-file-field">
+                <label for="backup_file">SQLite backup file</label>
+                <input type="file"
+                       id="backup_file"
+                       name="backup_file"
+                       accept=".sqlite,.sqlite3,.db"
+                       required
+                       aria-describedby="database-restore-file-hint database-selected-backup">
+                <p id="database-restore-file-hint">Supported files: .sqlite, .sqlite3, or .db. Maximum upload size: 64 MB.</p>
+                <p id="database-selected-backup" class="database-selected-backup" data-selected-backup aria-live="polite">
+                    No backup file selected.
+                </p>
+            </div>
+            <button type="submit"
+                    class="primary-button database-restore-button"
+                    {% if database_info.status != "available" %}disabled{% endif %}>
+                Restore selected backup
+            </button>
+        </form>
+    </section>
+</div>
 
 {% endblock %}

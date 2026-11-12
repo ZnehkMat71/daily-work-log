@@ -1,4 +1,64 @@
 document.addEventListener("DOMContentLoaded", function () {
+    const databaseManagement = document.querySelector("[data-database-management]");
+    if (databaseManagement) {
+        const backupLink = databaseManagement.querySelector("[data-database-backup]");
+        const backupFeedback = databaseManagement.querySelector(
+            "[data-database-backup-feedback]"
+        );
+        const restoreForm = databaseManagement.querySelector("[data-database-restore]");
+        const restoreFile = databaseManagement.querySelector("#backup_file");
+        const selectedBackup = databaseManagement.querySelector("[data-selected-backup]");
+        const restoreButton = restoreForm
+            ? restoreForm.querySelector('button[type="submit"]')
+            : null;
+
+        if (backupLink) {
+            backupLink.addEventListener("click", function (event) {
+                if (backupLink.dataset.backupRequested === "true") {
+                    event.preventDefault();
+                    return;
+                }
+
+                backupLink.dataset.backupRequested = "true";
+                backupLink.setAttribute("aria-disabled", "true");
+                backupLink.setAttribute("aria-busy", "true");
+                backupLink.textContent = "Preparing backup…";
+                if (backupFeedback) {
+                    backupFeedback.textContent =
+                        "Backup requested. The download will begin once the snapshot is ready.";
+                }
+
+                window.setTimeout(function () {
+                    delete backupLink.dataset.backupRequested;
+                    backupLink.removeAttribute("aria-disabled");
+                    backupLink.removeAttribute("aria-busy");
+                    backupLink.textContent = "Download database backup";
+                }, 2500);
+            });
+        }
+
+        if (restoreFile && selectedBackup) {
+            restoreFile.addEventListener("change", function () {
+                const file = restoreFile.files && restoreFile.files[0];
+                selectedBackup.textContent = file
+                    ? `Selected backup: ${file.name}`
+                    : "No backup file selected.";
+            });
+        }
+
+        if (restoreForm && restoreButton) {
+            restoreForm.addEventListener("submit", function (event) {
+                if (event.defaultPrevented) {
+                    return;
+                }
+
+                restoreButton.disabled = true;
+                restoreButton.setAttribute("aria-busy", "true");
+                restoreButton.textContent = "Restoring backup…";
+            });
+        }
+    }
+
     const body = document.body;
     const sidebar = document.getElementById("app-sidebar");
     const mainContent = document.querySelector(".main-content");

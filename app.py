@@ -958,12 +958,43 @@ def request_entity_too_large(_error):
 
 @app.route("/database")
 def database_management():
-    """Display database backup and restore controls."""
+    """Display database details and backup/restore controls."""
+
+    database_path = Path(DATABASE_PATH)
+    database_info = {
+        "status": "unavailable",
+        "name": database_path.name,
+        "size": None,
+        "modified": None,
+    }
+
+    try:
+        if database_path.is_file():
+            database_stat = database_path.stat()
+            size = database_stat.st_size
+            if size < 1024:
+                size_label = f"{size} bytes"
+            elif size < 1024 * 1024:
+                size_label = f"{size / 1024:.1f} KB"
+            else:
+                size_label = f"{size / (1024 * 1024):.1f} MB"
+
+            database_info.update(
+                status="available",
+                size=size_label,
+                modified=datetime.fromtimestamp(
+                    database_stat.st_mtime
+                ).astimezone().strftime("%b %d, %Y at %I:%M %p"),
+            )
+    except OSError:
+        app.logger.exception("Unable to read application database file information.")
+        database_info["status"] = "error"
 
     return render_template(
         "database_management.html",
         page_title="Database Management",
         active_page="database_management",
+        database_info=database_info,
     )
 
 
@@ -1022,6 +1053,15 @@ def restore_database_backup():
     upload = request.files.get("backup_file")
     if upload is None or not upload.filename:
         flash("Choose a database backup file to restore.", "error")
+        return redirect(url_for("database_management"))
+
+    if (
+        "/" in upload.filename
+        or "\\" in upload.filename
+        or ":" in upload.filename
+        or upload.filename.startswith("..")
+    ):
+        flash("Choose a backup file using its filename only.", "error")
         return redirect(url_for("database_management"))
 
     if Path(upload.filename).suffix.lower() not in (".sqlite", ".sqlite3", ".db"):

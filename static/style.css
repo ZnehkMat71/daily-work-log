@@ -4041,3 +4041,232 @@ body.sidebar-collapsed .sidebar-footer {
     }
 
 }
+
+/* Stage 5: database management */
+.database-management-page {
+    width: 100%;
+}
+
+.database-page-intro {
+    margin-bottom: var(--space-5);
+}
+
+.database-management-card {
+    max-width: 1040px;
+}
+
+.database-management-card .section-heading {
+    align-items: flex-start;
+}
+
+.database-overview-card .section-heading > div:first-child p,
+.database-backup-card .section-heading > div:first-child > p:last-child,
+.database-restore-card .section-heading > div:first-child > p:last-child {
+    max-width: 680px;
+}
+
+.database-status {
+    display: inline-flex;
+    min-height: 28px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    white-space: nowrap;
+}
+
+.database-status > span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.database-status-available {
+    border-color: rgba(52, 211, 153, 0.26);
+    background: rgba(52, 211, 153, 0.08);
+    color: var(--success);
+}
+
+.database-status-unavailable {
+    border-color: rgba(251, 191, 36, 0.26);
+    background: rgba(251, 191, 36, 0.08);
+    color: var(--warning);
+}
+
+.database-status-error {
+    border-color: rgba(248, 113, 113, 0.28);
+    background: rgba(248, 113, 113, 0.08);
+    color: var(--danger);
+}
+
+.database-overview-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin: var(--space-5) 0 0;
+}
+
+.database-overview-list > div {
+    min-width: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-color);
+}
+
+.database-overview-list dt {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+}
+
+.database-overview-list dd {
+    margin: var(--space-1) 0 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.database-backup-card .section-heading,
+.database-restore-card .section-heading {
+    margin-bottom: var(--space-4);
+}
+
+.database-backup-button {
+    min-height: 44px;
+}
+
+.database-backup-button[aria-disabled="true"] {
+    opacity: 0.72;
+    cursor: wait;
+}
+
+.database-backup-feedback {
+    min-height: 1.5em;
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.database-history-note,
+.database-unavailable-message {
+    margin: var(--space-3) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.database-restore-card {
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.database-restore-warning {
+    margin: 0 0 var(--space-5);
+    padding: var(--space-4);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: var(--radius-md);
+    background: rgba(251, 191, 36, 0.08);
+    color: var(--warning);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+.database-restore-warning strong {
+    display: block;
+    margin-bottom: var(--space-1);
+    color: #FCDFA3;
+}
+
+.database-restore-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-4);
+}
+
+.database-restore-file-field {
+    display: grid;
+    min-width: 0;
+    gap: var(--space-2);
+}
+
+.database-restore-file-field label {
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.database-restore-file-field input[type="file"] {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: var(--space-2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.database-restore-file-field p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+}
+
+.database-selected-backup {
+    color: var(--text-primary) !important;
+    overflow-wrap: anywhere;
+}
+
+.database-restore-button {
+    min-height: 44px;
+    border-color: rgba(248, 113, 113, 0.42);
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--danger);
+}
+
+.database-restore-button:hover:not(:disabled) {
+    border-color: var(--danger);
+    background: rgba(248, 113, 113, 0.2);
+    color: var(--text-primary);
+}
+
+.database-restore-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+    .database-overview-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .database-restore-form {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+    }
+
+    .database-restore-button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .database-management-card .section-heading {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .database-overview-list {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-3);
+    }
+
+    .database-backup-button {
+        width: 100%;
+    }
+}
