@@ -3,22 +3,44 @@
 
 {% block content %}
 
-<section class="welcome">
-    <p class="eyebrow">DAILY OVERVIEW</p>
-    <h2>Stay organized. Get things done.</h2>
-    <p>Keep track of your daily activities and progress in one place.</p>
+<section class="welcome dashboard-welcome">
+    <div>
+        <p class="eyebrow">DAILY OVERVIEW</p>
+        <h2>Stay organized. Get things done.</h2>
+        <p>Keep track of your daily activities and progress in one place.</p>
+    </div>
+    <a href="{{ url_for('add_activity') }}" class="primary-button dashboard-add-button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14"></path>
+        </svg>
+        Add Activity
+    </a>
 </section>
 
-<section class="stats-grid">
+<section class="stats-grid dashboard-stats" aria-label="Activity statistics">
     {% set completion_rate = stats.completion_rate or 0 %}
-    <article class="stat-card">
-        <p>Total Tasks</p>
+    <article class="stat-card dashboard-stat-card">
+        <div class="dashboard-stat-heading">
+            <p>Total Tasks</p>
+            <span class="dashboard-stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 4.5h10a2 2 0 0 1 2 2v13H5v-13a2 2 0 0 1 2-2ZM8.5 9h7M8.5 13h7M8.5 17h4"></path>
+                </svg>
+            </span>
+        </div>
         <h3>{{ stats.total or 0 }}</h3>
         <span>All recorded tasks</span>
     </article>
 
-    <article class="stat-card">
-        <p>Completed</p>
+    <article class="stat-card dashboard-stat-card dashboard-stat-completed">
+        <div class="dashboard-stat-heading">
+            <p>Completed</p>
+            <span class="dashboard-stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="m5 12.5 4.5 4.5L19 7"></path>
+                </svg>
+            </span>
+        </div>
         <h3>{{ stats.completed or 0 }}</h3>
         <div class="completion-meter"
              role="progressbar"
@@ -31,20 +53,46 @@
         <span>{{ completion_rate }}% of all activities completed</span>
     </article>
 
-    <article class="stat-card">
-        <p>In Progress</p>
+    <article class="stat-card dashboard-stat-card dashboard-stat-progress">
+        <div class="dashboard-stat-heading">
+            <p>In Progress</p>
+            <span class="dashboard-stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="8"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                </svg>
+            </span>
+        </div>
         <h3>{{ stats.in_progress or 0 }}</h3>
         <span>Currently working on</span>
     </article>
 
-    <article class="stat-card">
-        <p>Pending</p>
+    <article class="stat-card dashboard-stat-card dashboard-stat-pending">
+        <div class="dashboard-stat-heading">
+            <p>Pending</p>
+            <span class="dashboard-stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 5.5h12M6 12h12M6 18.5h12"></path>
+                    <circle cx="4" cy="5.5" r=".5"></circle>
+                    <circle cx="4" cy="12" r=".5"></circle>
+                    <circle cx="4" cy="18.5" r=".5"></circle>
+                </svg>
+            </span>
+        </div>
         <h3>{{ stats.pending or 0 }}</h3>
         <span>Waiting to start</span>
     </article>
     
-    <article class="stat-card">
-        <p>Today's Activities</p>
+    <article class="stat-card dashboard-stat-card dashboard-stat-today">
+        <div class="dashboard-stat-heading">
+            <p>Today's Activities</p>
+            <span class="dashboard-stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <rect x="4" y="5.5" width="16" height="15" rx="2"></rect>
+                    <path d="M8 3.5v4M16 3.5v4M4 10h16"></path>
+                </svg>
+            </span>
+        </div>
         <h3>{{ stats.today or 0 }}</h3>
         <span>Activities recorded today</span>
     </article>
@@ -52,11 +100,12 @@
 
 <section class="dashboard-analytics-grid" aria-label="Productivity analytics">
     <article class="content-card dashboard-chart-card">
-        <div class="section-heading">
+        <div class="section-heading dashboard-section-heading">
             <div>
                 <h2>Activity This Week</h2>
                 <p>Daily activity counts for the last seven days.</p>
             </div>
+            <span class="dashboard-chart-period">Last 7 days</span>
         </div>
         <div class="dashboard-chart-wrapper">
             <canvas id="dashboardWeeklyChart"
@@ -68,11 +117,12 @@
     </article>
 
     <article class="content-card dashboard-chart-card">
-        <div class="section-heading">
+        <div class="section-heading dashboard-section-heading">
             <div>
                 <h2>Priority Distribution</h2>
                 <p>Activities grouped by priority.</p>
             </div>
+            <span class="dashboard-chart-period">All activities</span>
         </div>
         <div class="dashboard-chart-wrapper priority-chart-wrapper">
             <canvas id="dashboardPriorityChart"
@@ -84,15 +134,18 @@
     </article>
 </section>
 
-<section class="content-card">
-    <div class="section-heading">
+<section class="content-card dashboard-recent-card">
+    <div class="section-heading dashboard-section-heading">
         <div>
             <h2>Recent Activities</h2>
             <p>Your five most recently recorded activities.</p>
         </div>
 
-        <a href="{{ url_for('work_history') }}" class="clear-button">
-            View All
+        <a href="{{ url_for('work_history') }}" class="clear-button dashboard-view-all">
+            View Work History
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14m-6-6 6 6-6 6"></path>
+            </svg>
         </a>
     </div>
 
@@ -111,11 +164,11 @@
                 <tbody>
                     {% for activity in recent_activities %}
                         <tr>
-                            <td>
+                            <td class="dashboard-activity-date">
                                 {{ activity['activity_date'] }}
                                 {% if activity['activity_time'] %}
                                     <br>
-                                    <small>{{ activity['activity_time'] }}</small>
+                                    <small class="dashboard-activity-time">{{ activity['activity_time'] }}</small>
                                 {% endif %}
                             </td>
 
@@ -135,7 +188,7 @@
                             </td>
 
                             <td>
-                                <span class="status-badge">
+                                <span class="status-badge dashboard-status-{{ activity['status']|lower|replace(' ', '-') }}">
                                     {{ activity['status'] }}
                                 </span>
                             </td>

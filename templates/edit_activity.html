@@ -1,19 +1,18 @@
-
 {% extends "base.html" %}
+
 {% block content %}
 
-<!-- Edit Activity description -->
-<div class="page-description">
-    <p>Update your existing activity details.</p>
-</div>
+<section class="welcome activity-page-intro">
+    <p class="eyebrow">WORKSPACE / ACTIVITIES</p>
+    <h2>Update activity details</h2>
+    <p>Make changes to this activity. Your existing details are kept until you save an update.</p>
+</section>
 
-<!-- Edit Activity form card -->
-<div class="card edit-activity-card">
-
+<section class="content-card activity-form-card">
     <div class="section-heading">
         <div>
-            <h2>Activity Details</h2>
-            <p>Modify the information below.</p>
+            <h2>Edit activity</h2>
+            <p>Fields marked <span class="required-indicator" aria-hidden="true">*</span> are required.</p>
         </div>
     </div>
 
@@ -24,138 +23,83 @@
               keyword=return_params.keyword,
               filter_date=return_params.filter_date,
               page=return_params.page
-          ) }}">
+          ) }}"
+          class="activity-form activity-form-layout">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-        <!-- Date and Time -->
-        <div class="form-row">
-
-            <div class="form-group">
-                <label for="activity_date">Date *</label>
-
-                <input
-                    type="date"
-                    id="activity_date"
-                    name="activity_date"
-                    value="{{ form_data.activity_date if form_data else activity['activity_date'] }}"
-                    max="{{ today }}"
-                    required
-                >
+        <div class="form-grid activity-form-grid">
+            <div class="form-field full-width">
+                <label for="title">
+                    Activity title <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       value="{{ form_data.title if form_data else activity['title'] }}"
+                       maxlength="200"
+                       required
+                       placeholder="Enter activity title">
             </div>
 
-            <div class="form-group">
-                <label for="activity_time">Time</label>
-
-                <input
-                    type="time"
-                    id="activity_time"
-                    name="activity_time"
-                    value="{{ form_data.activity_time if form_data else (activity['activity_time'] or '') }}"
-                >
+            <div class="form-field">
+                <label for="activity_date">
+                    Date <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <input type="date"
+                       id="activity_date"
+                       name="activity_date"
+                       value="{{ form_data.activity_date if form_data else activity['activity_date'] }}"
+                       max="{{ today }}"
+                       required>
             </div>
 
-        </div>
+            <div class="form-field">
+                <label for="activity_time">Time <span class="optional-indicator">(optional)</span></label>
+                <input type="time"
+                       id="activity_time"
+                       name="activity_time"
+                       value="{{ form_data.activity_time if form_data else (activity['activity_time'] or '') }}">
+            </div>
 
-        <!-- Activity Title -->
-        <div class="form-group">
-            <label for="title">Activity Title *</label>
-
-            <input
-                type="text"
-                id="title"
-                name="title"
-                value="{{ form_data.title if form_data else activity['title'] }}"
-                maxlength="200"
-                placeholder="Enter activity title"
-                required
-            >
-        </div>
-
-        <!-- Notes -->
-        <div class="form-group">
-            <label for="notes">Notes</label>
-
-            <textarea
-                id="notes"
-                name="notes"
-                rows="6"
-                placeholder="Describe your activity..."
-            >{{ form_data.notes if form_data else (activity['notes'] or '') }}</textarea>
-        </div>
-
-        <!-- Priority and Status -->
-        <div class="form-row">
-
-            <div class="form-group">
+            <div class="form-field">
                 <label for="priority">Priority</label>
-
+                {% set selected_priority = form_data.priority if form_data else activity['priority'] %}
                 <select id="priority" name="priority">
-
-                    <option value="Low"
-                        {% if (form_data.priority if form_data else activity['priority']) == 'Low' %}selected{% endif %}>
-                        Low
-                    </option>
-
-                    <option value="Medium"
-                        {% if (form_data.priority if form_data else activity['priority']) == 'Medium' %}selected{% endif %}>
-                        Medium
-                    </option>
-
-                    <option value="High"
-                        {% if (form_data.priority if form_data else activity['priority']) == 'High' %}selected{% endif %}>
-                        High
-                    </option>
-
+                    <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+                    <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
                 </select>
             </div>
 
-            <div class="form-group">
+            <div class="form-field">
                 <label for="status">Status</label>
-
+                {% set selected_status = form_data.status if form_data else activity['status'] %}
                 <select id="status" name="status">
-
-                    <option value="Pending"
-                        {% if (form_data.status if form_data else activity['status']) == 'Pending' %}selected{% endif %}>
-                        Pending
-                    </option>
-
-                    <option value="In Progress"
-                        {% if (form_data.status if form_data else activity['status']) == 'In Progress' %}selected{% endif %}>
-                        In Progress
-                    </option>
-
-                    <option value="Completed"
-                        {% if (form_data.status if form_data else activity['status']) == 'Completed' %}selected{% endif %}>
-                        Completed
-                    </option>
-
+                    <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Completed</option>
                 </select>
             </div>
 
+            <div class="form-field full-width">
+                <label for="notes">Description / Notes <span class="optional-indicator">(optional)</span></label>
+                <textarea id="notes"
+                          name="notes"
+                          rows="5"
+                          placeholder="Describe your activity...">{{ form_data.notes if form_data else (activity['notes'] or '') }}</textarea>
+            </div>
         </div>
 
-        <!-- Form buttons -->
-        <div class="form-actions">
-
-            <button type="submit" class="btn-primary">
-                Save Changes
-            </button>
-
-            <a
-                href="{{ url_for(
-                    'work_history',
-                    keyword=return_params.keyword,
-                    filter_date=return_params.filter_date,
-                    page=return_params.page
-                ) }}"
-                class="btn-secondary">
-                Cancel
-            </a>
-
+        <div class="activity-form-actions">
+            <button type="submit" class="primary-button">Save Changes</button>
+            <a href="{{ url_for(
+                'work_history',
+                keyword=return_params.keyword,
+                filter_date=return_params.filter_date,
+                page=return_params.page
+            ) }}" class="clear-button">Cancel</a>
         </div>
-
     </form>
-
-</div>
+</section>
 
 {% endblock %}

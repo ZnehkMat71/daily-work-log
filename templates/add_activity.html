@@ -1,30 +1,31 @@
-
 {% extends "base.html" %}
 
 {% block content %}
 
-<section class="welcome">
+<section class="welcome activity-page-intro">
     <p class="eyebrow">WORKSPACE / ACTIVITIES</p>
-    <h2>Record your work.</h2>
-    <p>Document the tasks you completed or are currently working on.</p>
+    <h2>Capture a work activity</h2>
+    <p>Record what you worked on and keep its status and priority up to date.</p>
 </section>
 
-<section class="content-card">
+<section class="content-card activity-form-card">
     <div class="section-heading">
         <div>
-            <h2>Activity Details</h2>
-            <p>Fields marked with * are required.</p>
+            <h2>Activity details</h2>
+            <p>Fields marked <span class="required-indicator" aria-hidden="true">*</span> are required.</p>
         </div>
     </div>
 
     <form method="POST"
           action="{{ url_for('add_activity') }}"
-          class="activity-form">
+          class="activity-form activity-form-layout">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-        <div class="form-grid">
-            <div class="form-field">
-                <label for="title">Activity title *</label>
+        <div class="form-grid activity-form-grid">
+            <div class="form-field full-width">
+                <label for="title">
+                    Activity title <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
                 <input type="text"
                        id="title"
                        name="title"
@@ -35,7 +36,9 @@
             </div>
 
             <div class="form-field">
-                <label for="activity_date">Date *</label>
+                <label for="activity_date">
+                    Date <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
                 <input type="date"
                        id="activity_date"
                        name="activity_date"
@@ -45,7 +48,7 @@
             </div>
 
             <div class="form-field">
-                <label for="activity_time">Time (optional)</label>
+                <label for="activity_time">Time <span class="optional-indicator">(optional)</span></label>
                 <input type="time"
                        id="activity_time"
                        name="activity_time"
@@ -73,21 +76,18 @@
             </div>
 
             <div class="form-field full-width">
-                <label for="notes">Description / Notes</label>
+                <label for="notes">Description / Notes <span class="optional-indicator">(optional)</span></label>
                 <textarea id="notes"
                           name="notes"
-                          rows="4"
+                          rows="5"
                           placeholder="Describe what you worked on...">{{ form_data.notes if form_data else '' }}</textarea>
             </div>
         </div>
 
-        <button type="submit" class="primary-button">
-            Save Activity
-        </button>
-
-        <a href="{{ url_for('dashboard') }}" class="clear-button">
-            Cancel
-        </a>
+        <div class="activity-form-actions">
+            <button type="submit" class="primary-button">Save Activity</button>
+            <a href="{{ url_for('dashboard') }}" class="clear-button">Cancel</a>
+        </div>
     </form>
 </section>
 

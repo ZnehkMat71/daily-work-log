@@ -37,6 +37,45 @@ Status: Completed and verified.
 
 ---
 
+## UI/UX Redesign — Stage 2: Dashboard and Activity Forms
+Status: Completed and verified.
+
+### Changes made
+- Refined the Dashboard welcome area and made Add Activity its primary action.
+- Reorganized the existing five statistics with compact icons, clear hierarchy, restrained status colors, and responsive grids.
+- Improved the existing two chart panels and recent activity table while retaining all displayed activity fields and the Work History link.
+- Rebuilt Add Activity and Edit Activity with the same responsive form layout, clear required/optional indicators, grouped fields, and consistent Save/Cancel actions.
+- Preserved edit values, validation repopulation, return-to-history parameters, CSRF fields, and existing routes.
+- Updated dashboard chart colors and typography to match the Stage 1 palette without changing its data or chart behavior.
+
+### Files modified
+- templates/index.html
+- templates/add_activity.html
+- templates/edit_activity.html
+- static/style.css
+- static/dashboard.js
+- templates/base.html
+- PROJECT_STATUS.md
+
+### Tests performed
+- `python -m py_compile app.py database.py`
+- `node --check static/app.js`, `node --check static/dashboard.js`, and `node --check static/reports.js`
+- `git diff --check`
+- Temporary-database Flask tests for Dashboard, Add Activity, Edit Activity, CSRF rejection, validation errors and submitted-value preservation, activity create/edit/delete, edit IDs and creation timestamps, and Work History return parameters.
+- Regression checks for Work History, weekly/monthly Reports, CSV/PDF exports, dashboard statistics and chart data; confirmed temporary schema and database contents were unchanged by read-only checks.
+- Browser verified Dashboard charts, Add/Edit form values and navigation, sidebar collapse persistence, mobile drawer inertness and Escape/focus behavior.
+- Browser checked Dashboard, Add Activity, Edit Activity, Work History, and Reports at 1440px, 1024px, 768px, and 375px after layout transitions settled; no page-level horizontal overflow was present.
+- Browser verified print media continues to hide the sidebar, report tabs, and filters and uses a white page background.
+- All destructive CRUD tests used isolated temporary SQLite data; the configured application database was not changed.
+
+### Remaining issues
+- None identified in Stage 2 verification.
+
+### Next task
+- UI/UX Redesign — Stage 3 (not started)
+
+---
+
 ## Phase 1: CSV Report Export
 Status: Complete and validated.
 

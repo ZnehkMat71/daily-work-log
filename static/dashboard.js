@@ -30,6 +30,20 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
+    const chartColors = {
+        accent: "#4D9FFF",
+        accentHover: "#69ADFF",
+        danger: "#F87171",
+        warning: "#FBBF24",
+        success: "#34D399",
+        text: "#94A3B8",
+        textPrimary: "#F1F5F9",
+        grid: "rgba(148, 163, 184, 0.14)",
+    };
+
+    Chart.defaults.color = chartColors.text;
+    Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, sans-serif';
+
     const weeklyCanvas = document.getElementById("dashboardWeeklyChart");
 
     if (weeklyCanvas && !Chart.getChart(weeklyCanvas)) {
@@ -40,8 +54,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 datasets: [{
                     label: "Activities",
                     data: dashboardData.weekly.values,
-                    backgroundColor: "#3B82F6",
-                    hoverBackgroundColor: "#60A5FA",
+                    backgroundColor: chartColors.accent,
+                    hoverBackgroundColor: chartColors.accentHover,
                     borderRadius: 6,
                     maxBarThickness: 42,
                 }],
@@ -68,18 +82,18 @@ document.addEventListener("DOMContentLoaded", function () {
                             display: false,
                         },
                         ticks: {
-                            color: "#94A3B8",
+                            color: chartColors.text,
                         },
                     },
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            color: "#94A3B8",
+                            color: chartColors.text,
                             precision: 0,
                             stepSize: 1,
                         },
                         grid: {
-                            color: "rgba(148, 163, 184, 0.12)",
+                            color: chartColors.grid,
                         },
                     },
                 },
@@ -103,7 +117,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         Number(priorities.Medium || 0),
                         Number(priorities.Low || 0),
                     ],
-                    backgroundColor: ["#F87171", "#60A5FA", "#64748B"],
+                    backgroundColor: [
+                        chartColors.danger,
+                        chartColors.accent,
+                        chartColors.success,
+                    ],
                     borderRadius: 6,
                     maxBarThickness: 48,
                 }],
@@ -129,17 +147,17 @@ document.addEventListener("DOMContentLoaded", function () {
                     x: {
                         beginAtZero: true,
                         ticks: {
-                            color: "#94A3B8",
+                            color: chartColors.text,
                             precision: 0,
                             stepSize: 1,
                         },
                         grid: {
-                            color: "rgba(148, 163, 184, 0.12)",
+                            color: chartColors.grid,
                         },
                     },
                     y: {
                         ticks: {
-                            color: "#CBD5E1",
+                            color: chartColors.textPrimary,
                         },
                         grid: {
                             display: false,
